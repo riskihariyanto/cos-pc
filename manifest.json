@@ -1,26 +1,17 @@
 {
-  "name": "Iuran COS",
-  "short_name": "Iuran COS",
-  "description": "Pencatatan iuran COS otomatis untuk PUK dan PC",
+  "name": "Kuitansi COS PWA",
+  "short_name": "Kuitansi COS",
+  "description": "Pencatatan iuran COS dan penerbitan kuitansi untuk PUK dan PC",
   "lang": "id",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "theme_color": "#0055A5",
   "background_color": "#EEF3F9",
   "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230055A5'/%3E%3Crect x='136' y='352' width='240' height='24' rx='12' fill='%23FDB913'/%3E%3Ctext x='256' y='312' font-family='Arial,sans-serif' font-size='168' font-weight='700' text-anchor='middle' fill='%23ffffff'%3ECOS%3C/text%3E%3C/svg%3E",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230055A5'/%3E%3Crect x='156' y='336' width='200' height='20' rx='10' fill='%23FDB913'/%3E%3Ctext x='256' y='304' font-family='Arial,sans-serif' font-size='132' font-weight='700' text-anchor='middle' fill='%23ffffff'%3ECOS%3C/text%3E%3C/svg%3E",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
