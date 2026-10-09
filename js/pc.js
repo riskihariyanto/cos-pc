@@ -31,20 +31,34 @@ function viewRiwayatKuitansi() {
   const list = allIuran()
     .filter(i => i.status === 'Lunas' && nomorTerbit(i))
     .sort((x, y) => tglCetak(y).localeCompare(tglCetak(x)) || (y.dibuat || 0) - (x.dibuat || 0));
-  const rows = list.map(i => {
+  const arg = i => '\'' + i.pid + '\',\'' + i.key + '\'';
+  const baris = list.map(i => {
     const p = S.puk[i.pid] || {};
     return '<tr><td>' + esc(p.namaPerusahaan || '-') + '<br><span class="hint">' + esc(i.nomorKuitansi) + '</span></td>' +
       '<td>' + esc(labelPeriode(i.key)) + '</td>' +
       '<td class="r">' + rp(i.total) + '</td>' +
       '<td>' + esc(labelMetode(i.metode) || '-') + '</td>' +
       '<td>' + esc(fmtTgl(tglCetak(i))) + '</td>' +
-      '<td><button class="btn sm prev" onclick="previewKuitansi(\'' + i.pid + '\',\'' + i.key + '\')">Preview Kuitansi</button></td></tr>';
+      '<td><button class="btn sm prev" onclick="previewKuitansi(' + arg(i) + ')">Preview Kuitansi</button></td></tr>';
   }).join('');
-  return '<section class="card"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
-    '<button class="btn alt" style="margin:0 0 12px" onclick="exportCSV()">Ekspor CSV</button>' +
-    '<div class="tw"><table>' +
+  const kartu = list.map(i => {
+    const p = S.puk[i.pid] || {};
+    return '<article class="rk-item">' +
+      '<div class="rk-nama">' + esc(p.namaPerusahaan || '-') + '</div>' +
+      '<div class="rk-nomor">' + esc(i.nomorKuitansi) + '</div>' +
+      '<div class="rk-info"><span class="rk-periode">' + esc(labelPeriode(i.key)) + '</span>' +
+      '<span class="rk-nominal">' + rp(i.total) + '</span></div>' +
+      '<div class="rk-aksi">' +
+      '<button class="btn sm prev" onclick="previewKuitansi(' + arg(i) + ')">Preview Kuitansi</button>' +
+      '<button class="btn sm alt" onclick="unduhKuitansi(' + arg(i) + ')">Unduh</button>' +
+      '</div></article>';
+  }).join('');
+  return '<section class="card rk"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
+    '<button class="btn alt rk-csv" onclick="exportCSV()">Ekspor CSV</button>' +
+    '<div class="tw rk-tabel"><table>' +
     '<tr><th>Nama PUK</th><th>Bulan/Tahun</th><th class="r">Nominal</th><th>Metode</th><th>Tanggal cetak</th><th>Aksi</th></tr>' +
-    (rows || '<tr><td colspan="6">Belum ada kuitansi yang diterbitkan.</td></tr>') + '</table></div></section>';
+    (baris || '<tr><td colspan="6">Belum ada kuitansi yang diterbitkan.</td></tr>') + '</table></div>' +
+    '<div class="rk-kartu">' + (kartu || '<p class="hint">Belum ada kuitansi yang diterbitkan.</p>') + '</div></section>';
 }
 
 function viewCatat() {
