@@ -66,7 +66,7 @@ function tolakIuran(pid, key) {
 function viewPUK() {
   const list = sortedPUK().map(pid => {
     const p = S.puk[pid];
-    return '<div class="row"><div class="info"><b>' + esc(p.namaPerusahaan) + '</b><br><span class="hint">Ketua: ' + esc(p.namaKetua) + ' · ' + (p.jumlahAnggota || 0) + ' anggota × ' + rp(p.tarifPerAnggota) + '<br>' + esc(p.email || '') + '</span></div>' +
+    return '<div class="row"><div class="info"><b>' + esc(p.namaPerusahaan) + '</b><br><span class="hint">Ketua: ' + esc(p.namaKetua) + ' · ' + (p.jumlahAnggota || 0) + ' anggota × ' + rp(p.tarifPerAnggota) + '<br>' + esc((p.email || '').replace(DOMAIN_LOGIN, '')) + '</span></div>' +
       '<div class="act"><button class="btn sm alt" onclick="editPUK(\'' + pid + '\')">Ubah anggota & tarif</button></div></div>';
   }).join('');
   return '<section class="card"><h3>Tambah PUK</h3>' +
@@ -74,7 +74,7 @@ function viewPUK() {
     '<label for="pKetua">Nama ketua PUK</label><input id="pKetua">' +
     '<label for="pJumlah">Jumlah anggota</label><input id="pJumlah" type="number" inputmode="numeric">' +
     '<label for="pTarif">Tarif iuran per anggota (Rp)</label><input id="pTarif" type="number" inputmode="numeric">' +
-    '<label for="pEmail">Email login PUK</label><input id="pEmail" type="email" autocomplete="off">' +
+    '<label for="pId">ID login PUK</label><input id="pId" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">' +
     '<label for="pPass">Sandi awal (min. 6 karakter)</label><input id="pPass" type="text" autocomplete="off">' +
     '<button class="btn" onclick="tambahPUK()">Tambah PUK</button></section>' +
     '<section class="card"><h3>Daftar PUK (' + Object.keys(S.puk).length + ')</h3>' + (list || '<p class="hint">Belum ada PUK.</p>') + '</section>';
@@ -82,8 +82,10 @@ function viewPUK() {
 
 async function tambahPUK() {
   const v = id => $(id).value.trim();
-  const nama = v('pNama'), ketua = v('pKetua'), jml = +v('pJumlah'), tarif = angka($('pTarif').value), email = v('pEmail'), pass = $('pPass').value;
-  if (!nama || !ketua || !(jml > 0) || !(tarif > 0) || !email || pass.length < 6) return toast('Lengkapi data, sandi minimal 6 karakter');
+  const nama = v('pNama'), ketua = v('pKetua'), jml = +v('pJumlah'), tarif = angka($('pTarif').value), idLogin = v('pId'), pass = $('pPass').value;
+  if (!nama || !ketua || !(jml > 0) || !(tarif > 0) || !idLogin || pass.length < 6) return toast('Lengkapi data, sandi minimal 6 karakter');
+  if (/\s/.test(idLogin)) return toast('ID login tidak boleh mengandung spasi');
+  const email = emailDariId(idLogin);
 
   const ok = await jalankan(async () => {
     const sec = firebase.initializeApp(firebaseConfig, 'sec' + Date.now());
@@ -100,7 +102,7 @@ async function tambahPUK() {
     }
     return true;
   }, 'PUK ditambahkan');
-  if (ok) ['pNama', 'pKetua', 'pJumlah', 'pTarif', 'pEmail', 'pPass'].forEach(id => { $(id).value = ''; });
+  if (ok) ['pNama', 'pKetua', 'pJumlah', 'pTarif', 'pId', 'pPass'].forEach(id => { $(id).value = ''; });
 }
 
 function editPUK(pid) {
