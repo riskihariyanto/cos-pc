@@ -25,12 +25,12 @@
     <div><b id="who"></b><small id="role"></small></div>
     <button onclick="doLogout()">Keluar</button>
   </header>
-  <nav id="nav"></nav>
-  <main id="content"></main>
+  <nav id="nav" aria-label="Menu utama"></nav>
+  <main id="content" aria-live="polite"></main>
 </div>
 
-<div id="busy" hidden>Memproses...</div>
-<div id="toast" hidden></div>
+<div id="busy" hidden role="status">Memproses...</div>
+<div id="toast" hidden role="alert"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
