@@ -1,3 +1,9 @@
+const BUKTI_MAX = 300000;
+
+function nomorTerbit(i) {
+  return !!(i && i.nomorKuitansi && i.nomorKuitansi !== '-');
+}
+
 function viewSetor() {
   const pid = S.profile.pukId;
   const p = S.puk[pid] || {};
@@ -6,19 +12,53 @@ function viewSetor() {
   const now = new Date();
   const hari = now.toISOString().slice(0, 10);
   const opts = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i === now.getMonth() ? ' selected' : '') + '>' + n + '</option>').join('');
+  const bukti = S.tmp.bukti || '';
   return '<section class="card"><h2>' + esc(p.namaPerusahaan || '') + '</h2>' +
     '<div class="grid">' +
     '<div class="stat"><span>Anggota aktif</span><b>' + jml + '</b></div>' +
     '<div class="stat"><span>Tarif per anggota</span><b>' + rp(tarif) + '</b></div>' +
     '<div class="stat"><span>Total seharusnya</span><b>' + rp(jml * tarif) + '</b></div>' +
     '</div></section>' +
-    '<section class="card"><h3>Setor iuran COS</h3>' +
+    '<section class="card"><h3>Bayar tunai</h3>' +
+    '<p class="hint">Serahkan uang iuran langsung ke Admin PC. Tidak perlu mengirim apa pun di sini. Setelah Admin PC mengonfirmasi, kuitansi muncul otomatis di menu Riwayat dan siap diunduh.</p></section>' +
+    '<section class="card"><h3>Bayar lewat transfer</h3>' +
     '<label for="fBulan">Bulan</label><select id="fBulan">' + opts + '</select>' +
     '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + now.getFullYear() + '">' +
-    '<label for="fTotal">Total iuran diterima (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + (jml * tarif) + '">' +
-    '<label for="fTanggal">Tanggal setor</label><input id="fTanggal" type="date" value="' + hari + '">' +
-    '<p class="hint">Nominal akan dicocokkan dengan anggota aktif × tarif. Kuitansi terbit otomatis setelah dikirim.</p>' +
-    '<button class="btn" onclick="submitSetor()">Kirim setoran</button></section>';
+    '<label for="fTotal">Jumlah yang ditransfer (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + (jml * tarif) + '">' +
+    '<label for="fTanggal">Tanggal transfer</label><input id="fTanggal" type="date" value="' + hari + '">' +
+    '<label for="fBukti">Foto bukti transfer</label><input id="fBukti" type="file" accept="image/*" onchange="pilihBukti(this)">' +
+    (bukti ? '<img src="' + bukti + '" alt="Bukti transfer" style="display:block;max-width:100%;max-height:260px;margin-top:10px;border:1px solid var(--line);border-radius:8px">' : '<p class="hint">Belum ada foto dipilih.</p>') +
+    '<p class="hint">Jumlah dikosongkan = ' + rp(jml * tarif) + '. Setelah dikirim, bukti masuk antrean Admin PC dan kuitansi terbit setelah dikonfirmasi.</p>' +
+    '<button class="btn" onclick="submitSetor()">Kirim bukti transfer</button></section>';
+}
+
+function pilihBukti(inp) {
+  const f = inp.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onerror = () => toast('Foto tidak bisa dibaca');
+  r.onload = () => {
+    const im = new Image();
+    im.onerror = () => toast('File bukan gambar yang valid');
+    im.onload = () => {
+      const coba = [[1280, 0.7], [1024, 0.55], [800, 0.45]];
+      let hasil = '';
+      for (const [sisi, mutu] of coba) {
+        const k = Math.min(1, sisi / Math.max(im.width, im.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(im.width * k);
+        cv.height = Math.round(im.height * k);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        hasil = cv.toDataURL('image/jpeg', mutu);
+        if (hasil.length <= BUKTI_MAX) break;
+      }
+      if (hasil.length > BUKTI_MAX) return toast('Foto terlalu besar, pilih foto lain');
+      S.tmp.bukti = hasil;
+      render();
+    };
+    im.src = r.result;
+  };
+  r.readAsDataURL(f);
 }
 
 async function nextNomor(namaPT, bulan, tahun) {
@@ -34,36 +74,41 @@ async function submitSetor() {
   const p = S.puk[pid];
   const bulan = +$('fBulan').value;
   const tahun = +$('fTahun').value;
-  const total = angka($('fTotal').value);
+  const harapan = p ? (+p.jumlahAnggota || 0) * (+p.tarifPerAnggota || 0) : 0;
+  const total = angka($('fTotal').value) || harapan;
   const tgl = $('fTanggal').value;
-  if (!p || !bulan || !tahun || !(total > 0) || !tgl) return toast('Lengkapi data setoran');
+  if (!p || !bulan || !tahun || !(total > 0) || !tgl) return toast('Lengkapi data transfer');
+  if (!S.tmp.bukti) return toast('Pilih foto bukti transfer dulu');
 
   const key = periodeKey(tahun, bulan);
   const ada = (S.iuran[pid] || {})[key];
   if (ada && ada.status !== 'Ditolak') return toast('Setoran periode ini sudah ada');
 
-  const harapan = (+p.jumlahAnggota || 0) * (+p.tarifPerAnggota || 0);
   if (total !== harapan) {
     const lanjut = confirm('Nominal ' + rp(total) + ' tidak sama dengan ' + rp(harapan) + ' (' + p.jumlahAnggota + ' anggota × ' + rp(p.tarifPerAnggota) + '). Tetap kirim?');
     if (!lanjut) return;
   }
 
   const ok = await jalankan(async () => {
-    const nomor = await nextNomor(p.namaPerusahaan, bulan, tahun);
-    await db.ref('iuran/' + pid + '/' + key).set({
+    const up = {};
+    up['iuran/' + pid + '/' + key] = {
       periode: key,
       total: total,
       tanggalSetor: tgl,
       status: 'Pending',
-      nomorKuitansi: nomor,
+      metode: 'Transfer',
+      nomorKuitansi: '-',
       jumlahAnggota: +p.jumlahAnggota || 0,
       tarifPerAnggota: +p.tarifPerAnggota || 0,
       selisih: total - harapan,
       dibuat: firebase.database.ServerValue.TIMESTAMP
-    });
+    };
+    up['bukti/' + pid + '/' + key] = S.tmp.bukti;
+    await db.ref().update(up);
     return true;
-  }, 'Setoran terkirim, kuitansi terbit');
+  }, 'Bukti transfer terkirim, menunggu konfirmasi Admin PC');
   if (ok) {
+    delete S.tmp.bukti;
     $('fTotal').value = '';
     showTab('riwayat');
   }
@@ -75,10 +120,15 @@ function viewRiwayat() {
   const keys = Object.keys(per).sort().reverse();
   const list = keys.map(k => {
     const i = per[k];
+    const metode = i.metode ? ' · ' + esc(i.metode) : '';
+    const siap = i.status === 'Lunas' && nomorTerbit(i);
+    const catatan = siap ? '<br>' + esc(i.nomorKuitansi)
+      : i.status === 'Ditolak' ? '<br>Ditolak. Kirim ulang bukti transfer di menu Setor COS.'
+      : '<br>Menunggu konfirmasi Admin PC. Kuitansi terbit setelah dikonfirmasi.';
+    const aksi = siap ? '<div class="act"><button class="btn sm" onclick="unduhKuitansi(\'' + pid + '\',\'' + k + '\')">Unduh PDF</button>' +
+      '<button class="btn sm alt" onclick="kirimWA(\'' + pid + '\',\'' + k + '\')">WhatsApp</button></div>' : '';
     return '<div class="row"><div class="info"><b>' + esc(labelPeriode(k)) + '</b> ' + badge(i.status) + '<br>' +
-      '<span class="hint">' + rp(i.total) + ' · setor ' + esc(fmtTgl(i.tanggalSetor)) + '<br>' + esc(i.nomorKuitansi) + '</span></div>' +
-      '<div class="act"><button class="btn sm" onclick="unduhKuitansi(\'' + pid + '\',\'' + k + '\')">Unduh PDF</button>' +
-      '<button class="btn sm alt" onclick="kirimWA(\'' + pid + '\',\'' + k + '\')">WhatsApp</button></div></div>';
+      '<span class="hint">' + rp(i.total) + ' · setor ' + esc(fmtTgl(i.tanggalSetor)) + metode + catatan + '</span></div>' + aksi + '</div>';
   }).join('');
   return '<section class="card"><h3>Riwayat setoran</h3>' + (list || '<p class="hint">Belum ada setoran.</p>') + '</section>';
 }
