@@ -1,9 +1,11 @@
 const firebaseConfig = {
-  apiKey: "ISI_API_KEY",
-  authDomain: "ISI_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://ISI_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "ISI_PROJECT_ID",
-  appId: "ISI_APP_ID"
+  apiKey: "AIzaSyBY9iF2mVGVzcZet8ANmYfyVJjzhndXSGA",
+  authDomain: "cos-pc.firebaseapp.com",
+  databaseURL: "https://cos-pc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "cos-pc",
+  storageBucket: "cos-pc.firebasestorage.app",
+  messagingSenderId: "585945369309",
+  appId: "1:585945369309:web:27c031cf96f5e4832ae934"
 };
 
 firebase.initializeApp(firebaseConfig);
