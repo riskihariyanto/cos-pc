@@ -24,11 +24,26 @@ auth.onAuthStateChanged(async user => {
   }
 });
 
+const DOMAIN_LOGIN = '@gmail.com';
+
+function emailDariId(id) {
+  const v = String(id || '').trim().toLowerCase();
+  return v.includes('@') ? v : v + DOMAIN_LOGIN;
+}
+
 async function doLogin() {
-  const e = $('lEmail').value.trim();
+  const id = $('lId').value.trim();
   const p = $('lPass').value;
-  if (!e || !p) return toast('Isi email dan sandi');
-  await jalankan(() => auth.signInWithEmailAndPassword(e, p));
+  if (!id || !p) return toast('Isi nama pengguna dan kata sandi');
+  busy(true);
+  try {
+    await auth.signInWithEmailAndPassword(emailDariId(id), p);
+  } catch (e) {
+    const salah = /invalid-credential|user-not-found|wrong-password|invalid-email/.test((e && e.code) || '');
+    toast(salah ? 'Nama pengguna atau kata sandi salah' : 'Gagal: ' + pesan(e));
+  } finally {
+    busy(false);
+  }
 }
 
 function doLogout() {
