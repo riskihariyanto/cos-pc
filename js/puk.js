@@ -4,22 +4,100 @@ function nomorTerbit(i) {
   return !!(i && i.nomorKuitansi && i.nomorKuitansi !== '-');
 }
 
+function periodeKunci(i) {
+  return !!(i && i.status !== 'Ditolak');
+}
+
+function labelMetode(m) {
+  return m === 'Tunai' ? 'Cash' : m === 'Transfer' ? 'Transfer' : '';
+}
+
+function labelStatusIuran(i) {
+  if (!i) return '';
+  if (i.status === 'Lunas') return 'Lunas';
+  if (i.status === 'Pending') return 'Menunggu Verifikasi Admin (' + (labelMetode(i.metode) || 'Transfer') + ')';
+  return i.status;
+}
+
+function badgeIuran(i) {
+  return '<span class="badge b-' + esc(i.status) + '">' + esc(labelStatusIuran(i)) + '</span>';
+}
+
+function pesanKunci(i) {
+  return i && i.status === 'Lunas'
+    ? 'Periode ini sudah dibayar dan kuitansinya sudah terbit'
+    : 'Periode ini sudah diajukan dan menunggu verifikasi Admin PC';
+}
+
+async function klaimPeriode(pid, key, data) {
+  const res = await db.ref('iuran/' + pid + '/' + key).transaction(cur => {
+    if (periodeKunci(cur)) return;
+    return data;
+  });
+  return res.committed;
+}
+
+function periodeSetor() {
+  const now = new Date();
+  return {
+    b: S.tmp.setorBulan || now.getMonth() + 1,
+    t: S.tmp.setorTahun || now.getFullYear(),
+    m: S.tmp.setorMetode === 'Tunai' ? 'Tunai' : 'Transfer'
+  };
+}
+
+function ubahPeriodeSetor() {
+  S.tmp.setorBulan = +$('fBulan').value || undefined;
+  S.tmp.setorTahun = +$('fTahun').value || undefined;
+  render();
+}
+
+function ubahMetodeSetor() {
+  S.tmp.setorMetode = $('fMetode').value;
+  render();
+}
+
+function panelTerkunci(pid, key, i) {
+  const siap = i.status === 'Lunas' && nomorTerbit(i);
+  const judul = i.status === 'Lunas' ? 'Sudah Dibayar' : labelStatusIuran(i);
+  const catatan = siap ? '<br>' + esc(i.nomorKuitansi) : '<br>Kuitansi terbit setelah Admin PC memverifikasi.';
+  const aksi = siap ? '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(\'' + pid + '\',\'' + key + '\')">Preview Kuitansi</button></div>' : '';
+  return '<div class="row"><div class="info"><b>' + esc(judul) + '</b> ' + badgeIuran(i) + '<br>' +
+    '<span class="hint">' + rp(i.total) + ' · ' + esc(labelMetode(i.metode)) + ' · ' + esc(fmtTgl(i.tanggalSetor)) + catatan + '</span></div>' + aksi + '</div>' +
+    '<p class="hint">Pengajuan untuk ' + esc(labelPeriode(key)) + ' terkunci. Pilih bulan lain untuk mengajukan setoran baru.</p>';
+}
+
 function viewSetor() {
   const pid = S.profile.pukId;
   const p = S.puk[pid] || {};
   const harapan = (Number(p.jumlahAnggota) || 0) * (Number(p.tarifPerAnggota) || 0);
-  const now = new Date();
-  const hari = now.toISOString().slice(0, 10);
-  const opts = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i === now.getMonth() ? ' selected' : '') + '>' + n + '</option>').join('');
+  const hari = new Date().toISOString().slice(0, 10);
+  const { b, t, m } = periodeSetor();
+  const key = periodeKey(t, b);
+  const ada = (S.iuran[pid] || {})[key];
+  const opts = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === b ? ' selected' : '') + '>' + n + '</option>').join('');
+  const periode = '<label for="fBulan">Bulan</label><select id="fBulan" onchange="ubahPeriodeSetor()">' + opts + '</select>' +
+    '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + t + '" onchange="ubahPeriodeSetor()">';
+
+  if (periodeKunci(ada)) {
+    return '<section class="card"><h3>Pengajuan setoran</h3>' + periode + '<div style="margin-top:14px">' + panelTerkunci(pid, key, ada) + '</div></section>';
+  }
+
   const bukti = S.tmp.bukti || '';
-  return '<section class="card">' +
-    '<label for="fBulan">Bulan</label><select id="fBulan">' + opts + '</select>' +
-    '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + now.getFullYear() + '">' +
+  const metodeOpts = '<option value="Transfer"' + (m === 'Transfer' ? ' selected' : '') + '>Transfer</option>' +
+    '<option value="Tunai"' + (m === 'Tunai' ? ' selected' : '') + '>Tunai (Cash)</option>';
+  const blokBukti = m === 'Transfer'
+    ? '<label for="fBukti">Foto bukti transfer</label><input id="fBukti" type="file" accept="image/*" onchange="pilihBukti(this)">' +
+      (bukti ? '<img src="' + bukti + '" alt="Bukti transfer" style="display:block;max-width:100%;max-height:260px;margin-top:10px;border:2px solid var(--pri);border-radius:8px">' : '')
+    : '<p class="hint">Serahkan uang tunai kepada Admin PC. Kuitansi terbit setelah Admin PC memverifikasi pengajuan ini.</p>';
+  const ditolak = ada && ada.status === 'Ditolak' ? '<p class="hint" style="color:var(--warn)">Pengajuan sebelumnya ditolak. Silakan kirim ulang.</p>' : '';
+
+  return '<section class="card"><h3>Pengajuan verifikasi pembayaran</h3>' + periode + ditolak +
+    '<label for="fMetode">Metode pembayaran</label><select id="fMetode" onchange="ubahMetodeSetor()">' + metodeOpts + '</select>' +
     '<label for="fTotal">Nominal (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + harapan + '">' +
-    '<label for="fTanggal">Tanggal</label><input id="fTanggal" type="date" value="' + hari + '">' +
-    '<label for="fBukti">Foto bukti transfer</label><input id="fBukti" type="file" accept="image/*" onchange="pilihBukti(this)">' +
-    (bukti ? '<img src="' + bukti + '" alt="Bukti transfer" style="display:block;max-width:100%;max-height:260px;margin-top:10px;border:2px solid var(--pri);border-radius:8px">' : '') +
-    '<button class="btn" onclick="submitSetor()">Kirim</button></section>';
+    '<label for="fTanggal">Tanggal bayar</label><input id="fTanggal" type="date" value="' + hari + '">' +
+    blokBukti +
+    '<button class="btn" onclick="submitSetor()">Kirim pengajuan</button></section>';
 }
 
 function pilihBukti(inp) {
@@ -64,15 +142,16 @@ async function submitSetor() {
   const p = S.puk[pid];
   const bulan = +$('fBulan').value;
   const tahun = +$('fTahun').value;
+  const metode = $('fMetode').value === 'Tunai' ? 'Tunai' : 'Transfer';
   const harapan = p ? (+p.jumlahAnggota || 0) * (+p.tarifPerAnggota || 0) : 0;
   const total = angka($('fTotal').value) || harapan;
   const tgl = $('fTanggal').value;
-  if (!p || !bulan || !tahun || !(total > 0) || !tgl) return toast('Lengkapi data transfer');
-  if (!S.tmp.bukti) return toast('Pilih foto bukti transfer dulu');
+  if (!p || !bulan || !tahun || !(total > 0) || !tgl) return toast('Lengkapi data pengajuan');
+  if (metode === 'Transfer' && !S.tmp.bukti) return toast('Pilih foto bukti transfer dulu');
 
   const key = periodeKey(tahun, bulan);
   const ada = (S.iuran[pid] || {})[key];
-  if (ada && ada.status !== 'Ditolak') return toast('Setoran periode ini sudah ada');
+  if (periodeKunci(ada)) return toast(pesanKunci(ada));
 
   if (total !== harapan) {
     const lanjut = confirm('Nominal ' + rp(total) + ' tidak sama dengan ' + rp(harapan) + ' (' + p.jumlahAnggota + ' anggota × ' + rp(p.tarifPerAnggota) + '). Tetap kirim?');
@@ -80,23 +159,31 @@ async function submitSetor() {
   }
 
   const ok = await jalankan(async () => {
-    const up = {};
-    up['iuran/' + pid + '/' + key] = {
+    const data = {
       periode: key,
       total: total,
       tanggalSetor: tgl,
       status: 'Pending',
-      metode: 'Transfer',
+      metode: metode,
+      sumber: 'PUK',
       nomorKuitansi: '-',
       jumlahAnggota: +p.jumlahAnggota || 0,
       tarifPerAnggota: +p.tarifPerAnggota || 0,
       selisih: total - harapan,
       dibuat: firebase.database.ServerValue.TIMESTAMP
     };
-    up['bukti/' + pid + '/' + key] = S.tmp.bukti;
-    await db.ref().update(up);
+    const berhasil = await klaimPeriode(pid, key, data);
+    if (!berhasil) throw new Error('Periode ini sudah dibayar atau sedang diajukan');
+    if (metode === 'Transfer') {
+      try {
+        await db.ref('bukti/' + pid + '/' + key).set(S.tmp.bukti);
+      } catch (e) {
+        await db.ref('iuran/' + pid + '/' + key).remove().catch(() => {});
+        throw e;
+      }
+    }
     return true;
-  }, 'Bukti transfer terkirim, menunggu konfirmasi Admin PC');
+  }, metode === 'Tunai' ? 'Pengajuan tunai terkirim, menunggu verifikasi Admin PC' : 'Bukti transfer terkirim, menunggu verifikasi Admin PC');
   if (ok) {
     delete S.tmp.bukti;
     $('fTotal').value = '';
@@ -110,15 +197,15 @@ function viewRiwayat() {
   const keys = Object.keys(per).sort().reverse();
   const list = keys.map(k => {
     const i = per[k];
-    const metode = i.metode ? ' · ' + esc(i.metode) : '';
+    const metode = i.metode ? ' · ' + esc(labelMetode(i.metode)) : '';
     const siap = i.status === 'Lunas' && nomorTerbit(i);
     const catatan = siap ? '<br>' + esc(i.nomorKuitansi)
-      : i.status === 'Ditolak' ? '<br>Ditolak. Kirim ulang bukti transfer di menu Setor COS.'
-      : '<br>Menunggu konfirmasi Admin PC. Kuitansi terbit setelah dikonfirmasi.';
+      : i.status === 'Ditolak' ? '<br>Ditolak. Ajukan ulang di menu Setor COS.'
+      : '<br>Menunggu verifikasi Admin PC. Kuitansi terbit setelah di-ACC.';
     const aksi = siap ? '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(\'' + pid + '\',\'' + k + '\')">Preview Kuitansi</button>' +
       '<button class="btn sm" onclick="unduhKuitansi(\'' + pid + '\',\'' + k + '\')">Unduh PDF</button>' +
       '<button class="btn sm alt" onclick="kirimWA(\'' + pid + '\',\'' + k + '\')">WhatsApp</button></div>' : '';
-    return '<div class="row"><div class="info"><b>' + esc(labelPeriode(k)) + '</b> ' + badge(i.status) + '<br>' +
+    return '<div class="row"><div class="info"><b>' + esc(labelPeriode(k)) + '</b> ' + badgeIuran(i) + '<br>' +
       '<span class="hint">' + rp(i.total) + ' · setor ' + esc(fmtTgl(i.tanggalSetor)) + metode + catatan + '</span></div>' + aksi + '</div>';
   }).join('');
   return '<section class="card"><h3>Riwayat setoran</h3>' + (list || '<p class="hint">Belum ada setoran.</p>') + '</section>';
