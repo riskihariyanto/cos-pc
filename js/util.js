@@ -10,6 +10,39 @@ const ribuan = v => {
 
 const angka = v => Number(String(v == null ? '' : v).replace(/\D/g, '')) || 0;
 
+function formatRupiahInput(el) {
+  const lama = el.value;
+  const baru = ribuan(lama);
+  if (baru === lama) return;
+  const fokus = document.activeElement === el && el.selectionStart != null;
+  const sebelum = fokus ? lama.slice(0, el.selectionStart).replace(/\D/g, '').length : 0;
+  el.value = baru;
+  if (!fokus) return;
+  let idx = 0;
+  let hitung = 0;
+  while (idx < baru.length && hitung < sebelum) {
+    if (/\d/.test(baru[idx])) hitung++;
+    idx++;
+  }
+  el.setSelectionRange(idx, idx);
+}
+
+function pasangInputRupiah(el) {
+  if (!el) return;
+  el.type = 'text';
+  el.inputMode = 'numeric';
+  el.autocomplete = 'off';
+  el.maxLength = 15;
+  el.dataset.rupiah = '1';
+  if (/^\d+$/.test(el.placeholder)) el.placeholder = ribuan(el.placeholder);
+  el.value = ribuan(el.value);
+}
+
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el && el.dataset && el.dataset.rupiah) formatRupiahInput(el);
+});
+
 const rp = n => {
   const x = Math.round(Number(n) || 0);
   return (x < 0 ? '-' : '') + 'Rp ' + (ribuan(Math.abs(x)) || '0');
