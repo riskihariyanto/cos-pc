@@ -1,0 +1,94 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'pc')",
+        ".write": "root.child('users').child(auth.uid).child('role').val() === 'pc'"
+      }
+    },
+
+    "puk": {
+      ".read": "root.child('users').child(auth.uid).child('role').val() === 'pc'",
+      "$pid": {
+        ".read": "root.child('users').child(auth.uid).child('pukId').val() === $pid",
+        ".write": "root.child('users').child(auth.uid).child('role').val() === 'pc'",
+        ".validate": "newData.hasChildren(['namaPerusahaan', 'namaKetua', 'jumlahAnggota', 'tarifPerAnggota'])",
+        "jumlahAnggota": {
+          ".write": "root.child('users').child(auth.uid).child('pukId').val() === $pid",
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "tarifPerAnggota": {
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        }
+      }
+    },
+
+    "anggota": {
+      ".read": "root.child('users').child(auth.uid).child('role').val() === 'pc'",
+      "$pid": {
+        ".read": "root.child('users').child(auth.uid).child('pukId').val() === $pid",
+        ".write": "root.child('users').child(auth.uid).child('pukId').val() === $pid || root.child('users').child(auth.uid).child('role').val() === 'pc'",
+        "$id": {
+          ".validate": "newData.hasChildren(['nama', 'aktif'])",
+          "nama": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 120"
+          },
+          "aktif": {
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      }
+    },
+
+    "iuran": {
+      ".read": "root.child('users').child(auth.uid).child('role').val() === 'pc'",
+      "$pid": {
+        ".read": "root.child('users').child(auth.uid).child('pukId').val() === $pid",
+        "$key": {
+          ".write": "root.child('users').child(auth.uid).child('role').val() === 'pc' || (root.child('users').child(auth.uid).child('pukId').val() === $pid && (!data.exists() || data.child('status').val() === 'Ditolak') && newData.child('status').val() === 'Pending' && newData.child('jumlahAnggota').val() === root.child('puk').child($pid).child('jumlahAnggota').val() && newData.child('tarifPerAnggota').val() === root.child('puk').child($pid).child('tarifPerAnggota').val() && newData.child('selisih').val() === newData.child('total').val() - newData.child('jumlahAnggota').val() * newData.child('tarifPerAnggota').val())",
+          ".validate": "newData.hasChildren(['periode', 'total', 'tanggalSetor', 'status', 'nomorKuitansi'])",
+          "periode": {
+            ".validate": "newData.isString() && newData.val() === $key"
+          },
+          "total": {
+            ".validate": "newData.isNumber() && newData.val() > 0"
+          },
+          "tanggalSetor": {
+            ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)"
+          },
+          "status": {
+            ".validate": "newData.val() === 'Pending' || newData.val() === 'Lunas' || newData.val() === 'Ditolak'"
+          },
+          "nomorKuitansi": {
+            ".validate": "newData.isString() && newData.val().length < 200"
+          }
+        }
+      }
+    },
+
+    "counter": {
+      "$year": {
+        ".read": "root.child('users').child(auth.uid).exists()",
+        ".write": "root.child('users').child(auth.uid).exists()",
+        ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() + 1 : 1)"
+      }
+    },
+
+    "pengaturan": {
+      ".read": "root.child('users').child(auth.uid).exists()",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'pc'",
+      "namaPC": {
+        ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 200"
+      },
+      "stempel": {
+        ".validate": "newData.isString() && newData.val().length < 800000"
+      },
+      "ttd": {
+        ".validate": "newData.isString() && newData.val().length < 800000"
+      }
+    }
+  }
+}
