@@ -1,12 +1,12 @@
 const INPUT_RUPIAH = ['fTotal', 'pTarif'];
 
 const GAYA_LANSIA = `
-:root{--mut:#333;--line:#8c99ab;--warn:#7a4b00}
+:root{--mut:#1a1a1a;--line:#8c99ab;--warn:#7a4b00}
 body{font-size:18px;line-height:1.5}
 header{position:static;padding:14px 16px}
 header b{font-size:20px}
 header small{font-size:16px;opacity:1}
-header button{min-height:48px;padding:10px 18px;font-size:17px;font-weight:700;background:#fff;color:var(--pri)}
+header button{min-height:48px;padding:10px 18px;font-size:17px;font-weight:700;background:#fff;color:var(--acc);border:3px solid var(--acc)}
 nav{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;overflow:visible;position:static;padding:12px}
 nav button{min-height:54px;padding:10px 8px;font-size:18px;font-weight:700;border:2px solid var(--pri);border-radius:12px;color:var(--pri)}
 nav button.on{background:var(--pri);color:#fff}
@@ -23,7 +23,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:4px solid #
 .btn{width:100%;min-height:60px;padding:14px 18px;margin-top:20px;font-size:20px;border-radius:12px}
 .btn.alt{border-width:2px}
 .btn.sm{width:auto;flex:1 1 44%;min-height:54px;margin:0;padding:12px 14px;font-size:18px}
-.row .act .btn.prev{flex:1 1 100%;min-height:60px;font-size:20px}
+.row .act .btn.prev{border-width:3px}
 .row{padding:18px 0;gap:12px}
 .row .info{min-width:100%}
 .row .act{width:100%;gap:10px}
