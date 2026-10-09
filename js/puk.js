@@ -34,7 +34,7 @@ async function submitSetor() {
   const p = S.puk[pid];
   const bulan = +$('fBulan').value;
   const tahun = +$('fTahun').value;
-  const total = Math.round(+$('fTotal').value);
+  const total = angka($('fTotal').value);
   const tgl = $('fTanggal').value;
   if (!p || !bulan || !tahun || !(total > 0) || !tgl) return toast('Lengkapi data setoran');
 
