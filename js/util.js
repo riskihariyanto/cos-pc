@@ -1,6 +1,19 @@
 const $ = id => document.getElementById(id);
 
-const rp = n => 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(n) || 0);
+const ribuan = v => {
+  const digit = (typeof v === 'number' ? String(Math.round(Math.abs(v))) : String(v == null ? '' : v))
+    .replace(/\D/g, '')
+    .replace(/^0+(?=\d)/, '')
+    .slice(0, 13);
+  return digit.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const angka = v => Number(String(v == null ? '' : v).replace(/\D/g, '')) || 0;
+
+const rp = n => {
+  const x = Math.round(Number(n) || 0);
+  return (x < 0 ? '-' : '') + 'Rp ' + (ribuan(Math.abs(x)) || '0');
+};
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
