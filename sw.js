@@ -1,4 +1,4 @@
-const VERSI = 'cos-v4';
+const VERSI = 'cos-v5';
 
 const SHELL = [
   './',
@@ -14,7 +14,8 @@ const SHELL = [
   './js/puk.js',
   './js/pc.js',
   './js/ui.js',
-  './js/auth.js'
+  './js/auth.js',
+  './js/pwa.js'
 ];
 
 const HOST_CDN = ['www.gstatic.com', 'cdnjs.cloudflare.com'];
