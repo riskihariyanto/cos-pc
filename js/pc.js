@@ -42,37 +42,82 @@ function pilihPUKCatat() {
   render();
 }
 
-function viewVerifikasi() {
+function periodeCatat() {
   const now = new Date();
-  const hari = now.toISOString().slice(0, 10);
+  return {
+    b: S.tmp.catatBulan || now.getMonth() + 1,
+    t: S.tmp.catatTahun || now.getFullYear()
+  };
+}
+
+function ubahPeriodeCatat() {
+  S.tmp.catatBulan = +$('fBulan').value || undefined;
+  S.tmp.catatTahun = +$('fTahun').value || undefined;
+  render();
+}
+
+function tglCetak(i) {
+  return i.tanggalCetak || i.tanggalVerifikasi || i.tanggalSetor || '';
+}
+
+function viewRiwayatKuitansi() {
+  const list = allIuran()
+    .filter(i => i.status === 'Lunas' && nomorTerbit(i))
+    .sort((x, y) => tglCetak(y).localeCompare(tglCetak(x)) || (y.dibuat || 0) - (x.dibuat || 0));
+  const rows = list.map(i => {
+    const p = S.puk[i.pid] || {};
+    return '<tr><td>' + esc(p.namaPerusahaan || '-') + '<br><span class="hint">' + esc(i.nomorKuitansi) + '</span></td>' +
+      '<td>' + esc(labelPeriode(i.key)) + '</td>' +
+      '<td class="r">' + rp(i.total) + '</td>' +
+      '<td>' + esc(labelMetode(i.metode) || '-') + '</td>' +
+      '<td>' + esc(fmtTgl(tglCetak(i))) + '</td>' +
+      '<td><button class="btn sm prev" onclick="previewKuitansi(\'' + i.pid + '\',\'' + i.key + '\')">Preview Kuitansi</button></td></tr>';
+  }).join('');
+  return '<section class="card"><h3>Riwayat kuitansi yang sudah diterbitkan (' + list.length + ')</h3><div class="tw"><table>' +
+    '<tr><th>Nama PUK</th><th>Bulan/Tahun</th><th class="r">Nominal</th><th>Metode</th><th>Tanggal cetak</th><th>Aksi</th></tr>' +
+    (rows || '<tr><td colspan="6">Belum ada kuitansi yang diterbitkan.</td></tr>') + '</table></div></section>';
+}
+
+function viewVerifikasi() {
+  const hari = new Date().toISOString().slice(0, 10);
   const pilih = S.tmp.pukPilih || '';
   const pp = S.puk[pilih];
+  const { b, t } = periodeCatat();
+  const key = periodeKey(t, b);
+  const ada = pilih ? (S.iuran[pilih] || {})[key] : null;
   const harapan = pp ? (+pp.jumlahAnggota || 0) * (+pp.tarifPerAnggota || 0) : 0;
   const optPUK = '<option value="">Pilih PUK</option>' + sortedPUK().map(pid => '<option value="' + pid + '"' + (pid === pilih ? ' selected' : '') + '>' + esc(S.puk[pid].namaPerusahaan) + '</option>').join('');
-  const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i === now.getMonth() ? ' selected' : '') + '>' + n + '</option>').join('');
-  const form = '<section class="card"><h3>Catat setoran masuk</h3>' +
+  const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === b ? ' selected' : '') + '>' + n + '</option>').join('');
+  const kepala = '<section class="card"><h3>Catat setoran masuk</h3>' +
     '<label for="fPuk">PUK</label><select id="fPuk" onchange="pilihPUKCatat()">' + optPUK + '</select>' +
-    '<label for="fMetode">Cara bayar</label><select id="fMetode"><option value="Tunai">Tunai (cash)</option><option value="Transfer">Transfer</option></select>' +
-    '<label for="fBulan">Bulan</label><select id="fBulan">' + optBulan + '</select>' +
-    '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + now.getFullYear() + '">' +
-    '<label for="fTotal">Jumlah diterima (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + harapan + '">' +
-    '<label for="fTanggal">Tanggal terima</label><input id="fTanggal" type="date" value="' + hari + '">' +
-    '<p class="hint">' + (pp ? 'Seharusnya ' + rp(harapan) + ' (' + (pp.jumlahAnggota || 0) + ' anggota × ' + rp(pp.tarifPerAnggota) + '). Jumlah dikosongkan = nilai ini. ' : '') + 'Kuitansi langsung terbit dan muncul di akun PUK.</p>' +
-    '<button class="btn" onclick="catatSetoran()">Catat lunas & terbitkan kuitansi</button></section>';
+    '<label for="fBulan">Bulan</label><select id="fBulan" onchange="ubahPeriodeCatat()">' + optBulan + '</select>' +
+    '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + t + '" onchange="ubahPeriodeCatat()">';
 
-  const list = allIuran().filter(x => x.status === 'Pending').sort((a, b) => (a.dibuat || 0) - (b.dibuat || 0));
+  let badan;
+  if (pilih && periodeKunci(ada)) {
+    badan = '<div style="margin-top:14px">' + panelTerkunci(pilih, key, ada) + '</div></section>';
+  } else {
+    badan = '<label for="fMetode">Cara bayar</label><select id="fMetode"><option value="Tunai">Tunai (Cash)</option><option value="Transfer">Transfer</option></select>' +
+      '<label for="fTotal">Jumlah diterima (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + harapan + '">' +
+      '<label for="fTanggal">Tanggal terima</label><input id="fTanggal" type="date" value="' + hari + '">' +
+      '<p class="hint">' + (pp ? 'Seharusnya ' + rp(harapan) + ' (' + (pp.jumlahAnggota || 0) + ' anggota × ' + rp(pp.tarifPerAnggota) + '). Jumlah dikosongkan = nilai ini. ' : '') + 'Kuitansi langsung terbit dan muncul di akun PUK.</p>' +
+      '<button class="btn" onclick="catatSetoran()">Catat lunas & terbitkan kuitansi</button></section>';
+  }
+
+  const list = allIuran().filter(x => x.status === 'Pending').sort((x, y) => (x.dibuat || 0) - (y.dibuat || 0));
   const rows = list.map(i => {
     const p = S.puk[i.pid] || {};
     const sel = i.selisih ? '<br><span class="hint" style="color:var(--warn)">Selisih ' + rp(i.selisih) + ' dari ' + i.jumlahAnggota + ' × ' + rp(i.tarifPerAnggota) + '</span>' : '';
-    const metode = i.metode ? ' · ' + esc(i.metode) : '';
-    const nomor = nomorTerbit(i) ? '<br>' + esc(i.nomorKuitansi) : '';
+    const asal = i.sumber === 'PUK' ? ' · diajukan PUK' : '';
     const bukti = i.metode === 'Transfer' ? '<button class="btn sm alt" onclick="lihatBukti(\'' + i.pid + '\',\'' + i.key + '\')">Lihat bukti</button>' : '';
-    return '<div class="row"><div class="info"><b>' + esc(p.namaPerusahaan || '-') + '</b> · ' + esc(labelPeriode(i.key)) + '<br>' +
-      '<span class="hint">' + rp(i.total) + ' · setor ' + esc(fmtTgl(i.tanggalSetor)) + metode + nomor + '</span>' + sel + '</div>' +
-      '<div class="act">' + bukti + '<button class="btn sm" onclick="verifikasiIuran(\'' + i.pid + '\',\'' + i.key + '\')">Lunas</button>' +
+    return '<div class="row"><div class="info"><b>' + esc(p.namaPerusahaan || '-') + '</b> · ' + esc(labelPeriode(i.key)) + ' ' + badgeIuran(i) + '<br>' +
+      '<span class="hint">' + rp(i.total) + ' · setor ' + esc(fmtTgl(i.tanggalSetor)) + ' · ' + esc(labelMetode(i.metode)) + asal + '</span>' + sel + '</div>' +
+      '<div class="act">' + bukti + '<button class="btn sm" onclick="verifikasiIuran(\'' + i.pid + '\',\'' + i.key + '\')">ACC / Verifikasi</button>' +
       '<button class="btn sm bad" onclick="tolakIuran(\'' + i.pid + '\',\'' + i.key + '\')">Tolak</button></div></div>';
   }).join('');
-  return form + '<section class="card"><h3>Menunggu verifikasi (' + list.length + ')</h3>' + (rows || '<p class="hint">Tidak ada setoran yang menunggu.</p>') + '</section>';
+  return kepala + badan +
+    '<section class="card"><h3>Antrean pengajuan (' + list.length + ')</h3>' + (rows || '<p class="hint">Tidak ada pengajuan yang menunggu.</p>') + '</section>' +
+    viewRiwayatKuitansi();
 }
 
 async function catatSetoran() {
@@ -88,8 +133,7 @@ async function catatSetoran() {
 
   const key = periodeKey(tahun, bulan);
   const ada = (S.iuran[pid] || {})[key];
-  if (ada && ada.status === 'Lunas') return toast('Periode ini sudah lunas');
-  if (ada && ada.status === 'Pending') return toast('Periode ini sudah ada di antrean, konfirmasi dari daftar di bawah');
+  if (periodeKunci(ada)) return toast(pesanKunci(ada));
 
   if (total !== harapan) {
     const lanjut = confirm('Nominal ' + rp(total) + ' tidak sama dengan ' + rp(harapan) + ' (' + p.jumlahAnggota + ' anggota × ' + rp(p.tarifPerAnggota) + '). Tetap catat?');
@@ -97,43 +141,54 @@ async function catatSetoran() {
   }
 
   const ok = await jalankan(async () => {
+    const hariIni = new Date().toISOString().slice(0, 10);
     const nomor = await nextNomor(p.namaPerusahaan, bulan, tahun);
-    const up = {};
-    up['iuran/' + pid + '/' + key] = {
+    const data = {
       periode: key,
       total: total,
       tanggalSetor: tgl,
       status: 'Lunas',
       metode: metode,
+      sumber: 'PC',
       nomorKuitansi: nomor,
       jumlahAnggota: +p.jumlahAnggota || 0,
       tarifPerAnggota: +p.tarifPerAnggota || 0,
       selisih: total - harapan,
       dibuat: firebase.database.ServerValue.TIMESTAMP,
       diverifikasiOleh: S.profile.nama || '',
-      tanggalVerifikasi: new Date().toISOString().slice(0, 10)
+      tanggalVerifikasi: hariIni,
+      tanggalCetak: hariIni
     };
-    if (ada) up['bukti/' + pid + '/' + key] = null;
-    await db.ref().update(up);
+    const berhasil = await klaimPeriode(pid, key, data);
+    if (!berhasil) throw new Error('Periode ini sudah dibayar atau sedang diajukan');
+    if (ada) await db.ref('bukti/' + pid + '/' + key).remove();
     return true;
   }, 'Setoran dicatat, kuitansi terbit di akun PUK');
   if (ok) $('fTotal').value = '';
 }
 
-function verifikasiIuran(pid, key) {
+async function verifikasiIuran(pid, key) {
   const i = (S.iuran[pid] || {})[key];
   const p = S.puk[pid];
   if (!i || !p) return toast('Data setoran tidak ditemukan');
-  jalankan(async () => {
+  if (i.status !== 'Pending') return toast('Pengajuan ini sudah diproses');
+  if (!confirm('ACC pengajuan ' + p.namaPerusahaan + ' periode ' + labelPeriode(key) + ' dan terbitkan kuitansi?')) return;
+  await jalankan(async () => {
     const [t, b] = key.split('-');
-    const upd = {
-      status: 'Lunas',
-      diverifikasiOleh: S.profile.nama || '',
-      tanggalVerifikasi: new Date().toISOString().slice(0, 10)
-    };
-    if (!nomorTerbit(i)) upd.nomorKuitansi = await nextNomor(p.namaPerusahaan, +b, +t);
-    await db.ref('iuran/' + pid + '/' + key).update(upd);
-  }, 'Setoran lunas, kuitansi terbit di akun PUK');
+    const hariIni = new Date().toISOString().slice(0, 10);
+    const nomor = nomorTerbit(i) ? i.nomorKuitansi : await nextNomor(p.namaPerusahaan, +b, +t);
+    const res = await db.ref('iuran/' + pid + '/' + key).transaction(cur => {
+      if (!cur || cur.status !== 'Pending') return;
+      return Object.assign({}, cur, {
+        status: 'Lunas',
+        nomorKuitansi: nomor,
+        diverifikasiOleh: S.profile.nama || '',
+        tanggalVerifikasi: hariIni,
+        tanggalCetak: hariIni
+      });
+    });
+    if (!res.committed) throw new Error('Pengajuan ini sudah diproses');
+  }, 'Pengajuan di-ACC, kuitansi terbit di akun PUK');
 }
 
 function tutupBukti() {
@@ -166,7 +221,13 @@ async function lihatBukti(pid, key) {
 
 function tolakIuran(pid, key) {
   if (!confirm('Tolak setoran ini? PUK dapat mengirim ulang.')) return;
-  jalankan(() => db.ref('iuran/' + pid + '/' + key).update({ status: 'Ditolak' }), 'Setoran ditolak');
+  jalankan(async () => {
+    const res = await db.ref('iuran/' + pid + '/' + key).transaction(cur => {
+      if (!cur || cur.status !== 'Pending') return;
+      return Object.assign({}, cur, { status: 'Ditolak' });
+    });
+    if (!res.committed) throw new Error('Pengajuan ini sudah diproses');
+  }, 'Setoran ditolak');
 }
 
 function viewPUK() {
@@ -260,7 +321,7 @@ function exportCSV() {
     .sort((a, b) => a.key.localeCompare(b.key) || namaPUK(a.pid).localeCompare(namaPUK(b.pid)));
   if (!data.length) return toast('Tidak ada data untuk tahun ini');
   const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Cara Bayar', 'Anggota', 'Total', 'Status']];
-  data.forEach(x => rows.push([nomorTerbit(x) ? x.nomorKuitansi : '', namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, x.metode || '', x.jumlahAnggota, x.total, x.status]));
+  data.forEach(x => rows.push([nomorTerbit(x) ? x.nomorKuitansi : '', namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, labelMetode(x.metode), x.jumlahAnggota, x.total, x.status]));
   const csv = rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
   const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
