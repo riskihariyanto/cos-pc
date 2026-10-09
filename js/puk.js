@@ -7,26 +7,19 @@ function nomorTerbit(i) {
 function viewSetor() {
   const pid = S.profile.pukId;
   const p = S.puk[pid] || {};
-  const jml = Number(p.jumlahAnggota) || 0;
-  const tarif = Number(p.tarifPerAnggota) || 0;
+  const harapan = (Number(p.jumlahAnggota) || 0) * (Number(p.tarifPerAnggota) || 0);
   const now = new Date();
   const hari = now.toISOString().slice(0, 10);
   const opts = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i === now.getMonth() ? ' selected' : '') + '>' + n + '</option>').join('');
   const bukti = S.tmp.bukti || '';
-  return '<section class="card"><h2>' + esc(p.namaPerusahaan || '') + '</h2>' +
-    '<div class="stat"><span>Total yang harus disetor</span><b>' + rp(jml * tarif) + '</b></div>' +
-    '<p class="hint">' + jml + ' anggota × ' + rp(tarif) + '</p></section>' +
-    '<section class="card"><h3>Bayar tunai</h3>' +
-    '<p class="hint">Serahkan uang langsung ke Admin PC. Setelah dikonfirmasi, kuitansi muncul di menu Riwayat.</p></section>' +
-    '<section class="card"><h3>Bayar lewat transfer</h3>' +
+  return '<section class="card">' +
     '<label for="fBulan">Bulan</label><select id="fBulan">' + opts + '</select>' +
     '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + now.getFullYear() + '">' +
-    '<label for="fTotal">Jumlah yang ditransfer (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + (jml * tarif) + '">' +
-    '<label for="fTanggal">Tanggal transfer</label><input id="fTanggal" type="date" value="' + hari + '">' +
+    '<label for="fTotal">Nominal (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + harapan + '">' +
+    '<label for="fTanggal">Tanggal</label><input id="fTanggal" type="date" value="' + hari + '">' +
     '<label for="fBukti">Foto bukti transfer</label><input id="fBukti" type="file" accept="image/*" onchange="pilihBukti(this)">' +
-    (bukti ? '<img src="' + bukti + '" alt="Bukti transfer" style="display:block;max-width:100%;max-height:260px;margin-top:10px;border:2px solid var(--pri);border-radius:8px">' : '<p class="hint">Belum ada foto dipilih.</p>') +
-    '<p class="hint">Jumlah dikosongkan = ' + rp(jml * tarif) + '.</p>' +
-    '<button class="btn" onclick="submitSetor()">Kirim bukti transfer</button></section>';
+    (bukti ? '<img src="' + bukti + '" alt="Bukti transfer" style="display:block;max-width:100%;max-height:260px;margin-top:10px;border:2px solid var(--pri);border-radius:8px">' : '') +
+    '<button class="btn" onclick="submitSetor()">Kirim</button></section>';
 }
 
 function pilihBukti(inp) {
