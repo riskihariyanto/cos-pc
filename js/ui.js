@@ -27,10 +27,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:4px solid #
 .row{padding:18px 0;gap:12px}
 .row .info{min-width:100%}
 .row .act{width:100%;gap:10px}
-.grid{grid-template-columns:1fr;gap:12px}
-.stat{padding:14px;border:1px solid var(--line)}
-.stat span{font-size:17px;color:var(--ink)}
-.stat b{font-size:26px}
+.peringatan{font-size:20px;padding:16px 18px}
 .hint{font-size:16px;color:var(--mut)}
 .badge{padding:4px 12px;font-size:15px}
 .b-Lunas{background:#dcfce7;color:#14532d}
@@ -47,7 +44,6 @@ th{font-size:15px;font-weight:700;color:var(--ink);text-transform:none;letter-sp
   nav{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
   nav button:last-child:nth-child(odd){grid-column:auto}
   .btn{width:auto;padding:14px 28px}
-  .grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
   .row .info{min-width:220px}
   .row .act{width:auto}
   .bar>div{min-width:140px}
@@ -58,14 +54,20 @@ const VIEWS = {
   setor: viewSetor,
   riwayat: viewRiwayat,
   anggota: viewAnggota,
-  rekap: viewRekap,
+  catat: viewCatat,
   verifikasi: viewVerifikasi,
   puk: viewPUK,
-  laporan: viewLaporan,
+  kuitansi: viewRiwayatKuitansi,
   pengaturan: viewPengaturan
 };
 
-const TABS_PC = [['rekap', 'Rekap'], ['verifikasi', 'Verifikasi'], ['puk', 'Data PUK'], ['laporan', 'Laporan'], ['pengaturan', 'Pengaturan']];
+const TABS_PC = [
+  ['catat', 'Catat Setoran Masuk'],
+  ['verifikasi', 'Verifikasi Setoran'],
+  ['puk', 'Tambah PUK'],
+  ['kuitansi', 'Riwayat Kuitansi'],
+  ['pengaturan', 'Pengaturan']
+];
 const TABS_PUK = [['setor', 'Setor COS'], ['riwayat', 'Riwayat']];
 
 function showTab(t) {
@@ -87,7 +89,11 @@ function render() {
   $('who').textContent = pc ? (S.pengaturan.namaPC || 'Pengurus Cabang') : (pukSendiri ? pukSendiri.namaPerusahaan : 'PUK');
   $('role').textContent = pc ? 'Dashboard PC' : 'Dashboard PUK';
 
-  $('nav').innerHTML = tabs.map(t => '<button class="' + (t[0] === S.tab ? 'on' : '') + '" onclick="showTab(\'' + t[0] + '\')">' + t[1] + '</button>').join('');
+  const antre = pc ? allIuran().filter(x => x.status === 'Pending').length : 0;
+  $('nav').innerHTML = tabs.map(t => {
+    const label = t[0] === 'verifikasi' && antre ? t[1] + ' (' + antre + ')' : t[1];
+    return '<button class="' + (t[0] === S.tab ? 'on' : '') + '" onclick="showTab(\'' + t[0] + '\')">' + esc(label) + '</button>';
+  }).join('');
 
   const box = $('content');
   const keep = {};
