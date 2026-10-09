@@ -49,7 +49,3 @@ async function doLogin() {
 function doLogout() {
   auth.signOut();
 }
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
