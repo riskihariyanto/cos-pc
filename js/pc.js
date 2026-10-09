@@ -37,25 +37,131 @@ function viewRekap() {
     (rows || '<tr><td colspan="4">Belum ada PUK terdaftar.</td></tr>') + '</table></div></section>';
 }
 
+function pilihPUKCatat() {
+  S.tmp.pukPilih = $('fPuk').value;
+  render();
+}
+
 function viewVerifikasi() {
+  const now = new Date();
+  const hari = now.toISOString().slice(0, 10);
+  const pilih = S.tmp.pukPilih || '';
+  const pp = S.puk[pilih];
+  const harapan = pp ? (+pp.jumlahAnggota || 0) * (+pp.tarifPerAnggota || 0) : 0;
+  const optPUK = '<option value="">Pilih PUK</option>' + sortedPUK().map(pid => '<option value="' + pid + '"' + (pid === pilih ? ' selected' : '') + '>' + esc(S.puk[pid].namaPerusahaan) + '</option>').join('');
+  const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i === now.getMonth() ? ' selected' : '') + '>' + n + '</option>').join('');
+  const form = '<section class="card"><h3>Catat setoran masuk</h3>' +
+    '<label for="fPuk">PUK</label><select id="fPuk" onchange="pilihPUKCatat()">' + optPUK + '</select>' +
+    '<label for="fMetode">Cara bayar</label><select id="fMetode"><option value="Tunai">Tunai (cash)</option><option value="Transfer">Transfer</option></select>' +
+    '<label for="fBulan">Bulan</label><select id="fBulan">' + optBulan + '</select>' +
+    '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + now.getFullYear() + '">' +
+    '<label for="fTotal">Jumlah diterima (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + harapan + '">' +
+    '<label for="fTanggal">Tanggal terima</label><input id="fTanggal" type="date" value="' + hari + '">' +
+    '<p class="hint">' + (pp ? 'Seharusnya ' + rp(harapan) + ' (' + (pp.jumlahAnggota || 0) + ' anggota × ' + rp(pp.tarifPerAnggota) + '). Jumlah dikosongkan = nilai ini. ' : '') + 'Kuitansi langsung terbit dan muncul di akun PUK.</p>' +
+    '<button class="btn" onclick="catatSetoran()">Catat lunas & terbitkan kuitansi</button></section>';
+
   const list = allIuran().filter(x => x.status === 'Pending').sort((a, b) => (a.dibuat || 0) - (b.dibuat || 0));
   const rows = list.map(i => {
     const p = S.puk[i.pid] || {};
     const sel = i.selisih ? '<br><span class="hint" style="color:var(--warn)">Selisih ' + rp(i.selisih) + ' dari ' + i.jumlahAnggota + ' × ' + rp(i.tarifPerAnggota) + '</span>' : '';
+    const metode = i.metode ? ' · ' + esc(i.metode) : '';
+    const nomor = nomorTerbit(i) ? '<br>' + esc(i.nomorKuitansi) : '';
+    const bukti = i.metode === 'Transfer' ? '<button class="btn sm alt" onclick="lihatBukti(\'' + i.pid + '\',\'' + i.key + '\')">Lihat bukti</button>' : '';
     return '<div class="row"><div class="info"><b>' + esc(p.namaPerusahaan || '-') + '</b> · ' + esc(labelPeriode(i.key)) + '<br>' +
-      '<span class="hint">' + rp(i.total) + ' · setor ' + esc(fmtTgl(i.tanggalSetor)) + '<br>' + esc(i.nomorKuitansi) + '</span>' + sel + '</div>' +
-      '<div class="act"><button class="btn sm" onclick="verifikasiIuran(\'' + i.pid + '\',\'' + i.key + '\')">Lunas</button>' +
+      '<span class="hint">' + rp(i.total) + ' · setor ' + esc(fmtTgl(i.tanggalSetor)) + metode + nomor + '</span>' + sel + '</div>' +
+      '<div class="act">' + bukti + '<button class="btn sm" onclick="verifikasiIuran(\'' + i.pid + '\',\'' + i.key + '\')">Lunas</button>' +
       '<button class="btn sm bad" onclick="tolakIuran(\'' + i.pid + '\',\'' + i.key + '\')">Tolak</button></div></div>';
   }).join('');
-  return '<section class="card"><h3>Menunggu verifikasi (' + list.length + ')</h3>' + (rows || '<p class="hint">Tidak ada setoran yang menunggu.</p>') + '</section>';
+  return form + '<section class="card"><h3>Menunggu verifikasi (' + list.length + ')</h3>' + (rows || '<p class="hint">Tidak ada setoran yang menunggu.</p>') + '</section>';
+}
+
+async function catatSetoran() {
+  const pid = $('fPuk').value;
+  const p = S.puk[pid];
+  const metode = $('fMetode').value === 'Transfer' ? 'Transfer' : 'Tunai';
+  const bulan = +$('fBulan').value;
+  const tahun = +$('fTahun').value;
+  const tgl = $('fTanggal').value;
+  const harapan = p ? (+p.jumlahAnggota || 0) * (+p.tarifPerAnggota || 0) : 0;
+  const total = angka($('fTotal').value) || harapan;
+  if (!p || !bulan || !tahun || !(total > 0) || !tgl) return toast('Pilih PUK dan lengkapi data setoran');
+
+  const key = periodeKey(tahun, bulan);
+  const ada = (S.iuran[pid] || {})[key];
+  if (ada && ada.status === 'Lunas') return toast('Periode ini sudah lunas');
+  if (ada && ada.status === 'Pending') return toast('Periode ini sudah ada di antrean, konfirmasi dari daftar di bawah');
+
+  if (total !== harapan) {
+    const lanjut = confirm('Nominal ' + rp(total) + ' tidak sama dengan ' + rp(harapan) + ' (' + p.jumlahAnggota + ' anggota × ' + rp(p.tarifPerAnggota) + '). Tetap catat?');
+    if (!lanjut) return;
+  }
+
+  const ok = await jalankan(async () => {
+    const nomor = await nextNomor(p.namaPerusahaan, bulan, tahun);
+    const up = {};
+    up['iuran/' + pid + '/' + key] = {
+      periode: key,
+      total: total,
+      tanggalSetor: tgl,
+      status: 'Lunas',
+      metode: metode,
+      nomorKuitansi: nomor,
+      jumlahAnggota: +p.jumlahAnggota || 0,
+      tarifPerAnggota: +p.tarifPerAnggota || 0,
+      selisih: total - harapan,
+      dibuat: firebase.database.ServerValue.TIMESTAMP,
+      diverifikasiOleh: S.profile.nama || '',
+      tanggalVerifikasi: new Date().toISOString().slice(0, 10)
+    };
+    if (ada) up['bukti/' + pid + '/' + key] = null;
+    await db.ref().update(up);
+    return true;
+  }, 'Setoran dicatat, kuitansi terbit di akun PUK');
+  if (ok) $('fTotal').value = '';
 }
 
 function verifikasiIuran(pid, key) {
-  jalankan(() => db.ref('iuran/' + pid + '/' + key).update({
-    status: 'Lunas',
-    diverifikasiOleh: S.profile.nama || '',
-    tanggalVerifikasi: new Date().toISOString().slice(0, 10)
-  }), 'Setoran ditandai lunas');
+  const i = (S.iuran[pid] || {})[key];
+  const p = S.puk[pid];
+  if (!i || !p) return toast('Data setoran tidak ditemukan');
+  jalankan(async () => {
+    const [t, b] = key.split('-');
+    const upd = {
+      status: 'Lunas',
+      diverifikasiOleh: S.profile.nama || '',
+      tanggalVerifikasi: new Date().toISOString().slice(0, 10)
+    };
+    if (!nomorTerbit(i)) upd.nomorKuitansi = await nextNomor(p.namaPerusahaan, +b, +t);
+    await db.ref('iuran/' + pid + '/' + key).update(upd);
+  }, 'Setoran lunas, kuitansi terbit di akun PUK');
+}
+
+function tutupBukti() {
+  const o = $('buktiView');
+  if (o) o.remove();
+}
+
+async function lihatBukti(pid, key) {
+  const src = await jalankan(async () => {
+    const s = await db.ref('bukti/' + pid + '/' + key).once('value');
+    return s.val();
+  });
+  if (typeof src !== 'string' || src.indexOf('data:image/') !== 0) return toast('Bukti transfer tidak ditemukan');
+  tutupBukti();
+  const ov = document.createElement('div');
+  ov.id = 'buktiView';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;overflow:auto';
+  ov.onclick = tutupBukti;
+  const cap = document.createElement('div');
+  cap.textContent = 'Ketuk di mana saja untuk menutup';
+  cap.style.cssText = 'color:#fff;font-size:16px';
+  const im = document.createElement('img');
+  im.src = src;
+  im.alt = 'Bukti transfer';
+  im.style.cssText = 'max-width:100%;max-height:85%;background:#fff;border-radius:8px';
+  ov.appendChild(cap);
+  ov.appendChild(im);
+  document.body.appendChild(ov);
 }
 
 function tolakIuran(pid, key) {
@@ -153,8 +259,8 @@ function exportCSV() {
     .filter(x => x.key.indexOf(t + '-') === 0)
     .sort((a, b) => a.key.localeCompare(b.key) || namaPUK(a.pid).localeCompare(namaPUK(b.pid)));
   if (!data.length) return toast('Tidak ada data untuk tahun ini');
-  const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Anggota', 'Total', 'Status']];
-  data.forEach(x => rows.push([x.nomorKuitansi, namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, x.jumlahAnggota, x.total, x.status]));
+  const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Cara Bayar', 'Anggota', 'Total', 'Status']];
+  data.forEach(x => rows.push([nomorTerbit(x) ? x.nomorKuitansi : '', namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, x.metode || '', x.jumlahAnggota, x.total, x.status]));
   const csv = rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
   const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
