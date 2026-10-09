@@ -12,12 +12,11 @@
 <div id="loginView" hidden>
   <div class="card">
     <h2>Iuran COS</h2>
-    <p class="hint">Masuk dengan akun PUK atau PC.</p>
-    <label for="lEmail">Email</label>
-    <input id="lEmail" type="email" autocomplete="username">
-    <label for="lPass">Sandi</label>
+    <label for="lId">Nama Pengguna / ID</label>
+    <input id="lId" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <label for="lPass">Kata Sandi</label>
     <input id="lPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="btn" style="width:100%" onclick="doLogin()">Masuk</button>
+    <button class="btn" style="width:100%;padding:15px 16px;font-size:17px;margin-top:18px" onclick="doLogin()">Masuk</button>
   </div>
 </div>
 
