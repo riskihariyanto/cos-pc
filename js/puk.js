@@ -125,7 +125,7 @@ function viewRiwayat() {
     const catatan = siap ? '<br>' + esc(i.nomorKuitansi)
       : i.status === 'Ditolak' ? '<br>Ditolak. Kirim ulang bukti transfer di menu Setor COS.'
       : '<br>Menunggu konfirmasi Admin PC. Kuitansi terbit setelah dikonfirmasi.';
-    const aksi = siap ? '<div class="act"><button class="btn sm" onclick="previewKuitansi(\'' + pid + '\',\'' + k + '\')">Lihat</button>' +
+    const aksi = siap ? '<div class="act"><button class="btn sm" onclick="previewKuitansi(\'' + pid + '\',\'' + k + '\')">Preview Kuitansi</button>' +
       '<button class="btn sm" onclick="unduhKuitansi(\'' + pid + '\',\'' + k + '\')">Unduh PDF</button>' +
       '<button class="btn sm alt" onclick="kirimWA(\'' + pid + '\',\'' + k + '\')">WhatsApp</button></div>' : '';
     return '<div class="row"><div class="info"><b>' + esc(labelPeriode(k)) + '</b> ' + badge(i.status) + '<br>' +
