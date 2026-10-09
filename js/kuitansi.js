@@ -154,53 +154,62 @@ function dataQR(teks) {
 
 const GAYA_PREVIEW = `
 .kp-overlay{position:fixed;inset:0;z-index:40;background:rgba(15,23,21,.72);display:flex;align-items:center;justify-content:center;padding:10px}
-.kp-box{background:#fff;border-radius:14px;width:100%;max-width:880px;max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.kp-box{background:#fff;border-radius:14px;width:100%;max-width:920px;max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35)}
 .kp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:var(--pri,#0055a5);color:#fff}
 .kp-head h2{margin:0;font-size:20px}
 .kp-x{background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:8px;font-size:22px;line-height:1;width:44px;height:44px;cursor:pointer}
-.kp-body{overflow:auto;padding:14px;background:#e9edf2;-webkit-overflow-scrolling:touch}
-.kp-paper{background:#fff;color:#1a1a1a;border:2px solid #282828;outline:1px solid #282828;outline-offset:-7px;padding:26px 28px 22px;font:18px/1.45 Inter,Helvetica,Arial,sans-serif;max-width:800px;margin:0 auto}
-.kp-pc{text-align:center;font-weight:800;font-size:26px;letter-spacing:.3px;text-transform:uppercase;line-height:1.2}
-.kp-alamat{text-align:center;font-size:14px;color:#555;margin-top:4px}
-.kp-garis{border:0;border-top:4px solid #0055a5;border-bottom:1.5px solid #fdb913;height:3px;margin:14px 0 16px}
-.kp-judul{text-align:center;font-weight:800;font-size:23px;letter-spacing:.8px}
-.kp-no{text-align:center;font-size:16px;color:#555;margin:2px 0 18px;word-break:break-all}
-.kp-baris{display:grid;grid-template-columns:200px 18px 1fr;padding:7px 0;align-items:baseline}
+.kp-body{overflow:auto;padding:12px;background:#e9edf2;-webkit-overflow-scrolling:touch}
+.kp-putar{display:none;margin:0 0 10px;padding:8px 12px;background:#fff4d6;border:1px solid #fdb913;border-radius:8px;font-size:14px;font-weight:600;text-align:center;color:#1a1a1a}
+.kp-skala{position:relative;width:100%;aspect-ratio:210/148;margin:0 auto;overflow:hidden}
+.kp-paper{position:absolute;left:0;top:0;width:840px;height:592px;transform-origin:0 0;background:#fff;color:#1a1a1a;font:14px/1.3 Helvetica,Arial,sans-serif;overflow:hidden}
+.kp-paper>*{position:absolute}
+.kp-frame1{left:32px;top:32px;right:32px;bottom:32px;border:2px solid #282828}
+.kp-frame2{left:38px;top:38px;right:38px;bottom:38px;border:.6px solid #282828}
+.kp-pc{left:0;right:0;top:62px;text-align:center;font-weight:700;font-size:24px;line-height:28px;text-transform:uppercase;white-space:nowrap}
+.kp-alamat{left:0;right:0;top:92px;text-align:center;font-size:11.3px;line-height:14px;color:#555}
+.kp-g1{left:56px;width:728px;top:118px;height:3.6px;background:#0055a5}
+.kp-g2{left:56px;width:728px;top:125px;height:1.2px;background:#fdb913}
+.kp-judul{left:0;right:0;top:140px;text-align:center;font-weight:700;font-size:17.3px;line-height:20px}
+.kp-no{left:0;right:0;top:166px;text-align:center;font-size:12px;line-height:14px;color:#555}
+.kp-rows{left:64px;right:64px;top:202px}
+.kp-baris{display:grid;grid-template-columns:156px 16px 1fr;margin-bottom:12.8px;font-size:14.1px;line-height:18.4px}
 .kp-baris b{font-weight:400;color:#555}
 .kp-baris i{font-style:normal;color:#555}
 .kp-baris span{font-weight:700;word-break:break-word}
-.kp-bawah{display:grid;grid-template-columns:140px 1fr 300px;gap:16px;align-items:end;margin-top:22px}
-.kp-qrbox{display:flex;flex-direction:column;align-items:center;gap:4px}
-.kp-qr{width:124px;height:124px;image-rendering:pixelated;display:block}
-.kp-qrcap{font-size:12px;color:#555;text-align:center;line-height:1.2}
-.kp-total{border:1px solid #bec4cc;background:#f8f9fa;border-radius:8px;padding:10px 14px 12px;text-align:center;align-self:center}
-.kp-total small{display:block;font-size:12px;letter-spacing:.08em;color:#555}
-.kp-total strong{display:block;font-size:30px;font-weight:800;line-height:1.2}
-.kp-ttd{text-align:center}
-.kp-ttd div{font-size:15.5px;white-space:nowrap}
-.kp-cap{position:relative;height:84px;margin:14px 0 0}
-.kp-cap img{position:absolute;display:block}
-.kp-cap .st{left:-6px;top:-8px;height:104px;max-width:112px;object-fit:contain;opacity:.88;z-index:1}
-.kp-cap .tt{left:50%;margin-left:-36px;bottom:-6px;height:70px;max-width:128px;object-fit:contain;z-index:2}
-.kp-nama{display:inline-block;font-weight:800;border-bottom:2px solid #1a1a1a;padding:0 10px 1px;min-width:170px;position:relative;z-index:3}
+.kp-qr{left:64px;top:368px;width:112px;height:112px;image-rendering:pixelated}
+.kp-qrcap{left:30px;width:180px;white-space:nowrap;top:484px;font-size:8.7px;line-height:10px;text-align:center;color:#555}
+.kp-total{left:208px;top:384px;width:264px;height:64px;border:1px solid #bec4cc;background:#f8f9fa;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.kp-total small{display:block;font-size:9.3px;line-height:12px;letter-spacing:.04em;color:#555}
+.kp-total strong{display:block;font-size:20px;line-height:26px;font-weight:700}
+.kp-tgl{left:536px;width:240px;top:336px;text-align:center;font-size:12.7px;line-height:16px}
+.kp-jab{left:536px;width:240px;top:356px;text-align:center;font-size:12.7px;line-height:16px}
+.kp-st{left:496px;top:356px;width:116px;height:116px;object-fit:contain;object-position:center bottom;opacity:.88}
+.kp-tt{left:588px;top:370px;width:128px;height:70px;object-fit:contain;object-position:center bottom}
+.kp-nama{left:536px;width:240px;top:440px;text-align:center;font-weight:700;font-size:14px;line-height:17px}
+.kp-nama span{display:inline-block;min-width:136px;padding:0 12px 1px;border-bottom:1.4px solid #1a1a1a}
+.kp-pie{left:0;right:0;top:524px;text-align:center;font-size:8.7px;line-height:10px;color:#787878}
 .kp-foot{display:flex;flex-wrap:wrap;gap:10px;padding:12px 14px;border-top:1px solid #dbe3e0;background:#fff}
 .kp-foot button{flex:1 1 150px;margin:0;padding:15px 12px;font-size:18px;border-radius:10px;cursor:pointer;font-weight:700;border:2px solid var(--pri,#0055a5);background:var(--pri,#0055a5);color:#fff}
 .kp-foot button.alt{background:#fff;color:var(--pri,#0055a5)}
 @media (max-width:700px){
 .kp-overlay{padding:0}
 .kp-box{border-radius:0;height:100%}
-.kp-paper{padding:18px 14px;font-size:17px}
-.kp-pc{font-size:21px}
-.kp-baris{grid-template-columns:1fr;gap:0}
-.kp-baris i{display:none}
-.kp-bawah{grid-template-columns:1fr;gap:18px}
-.kp-total{align-self:stretch}
-.kp-total strong{font-size:28px}
-.kp-ttd{justify-self:center;width:300px;max-width:100%}
+.kp-body{padding:8px}
+}
+@media (max-width:700px) and (orientation:portrait){
+.kp-putar{display:block}
+}
+@media (max-height:500px){
+.kp-head{padding:6px 12px}
+.kp-head h2{font-size:17px}
+.kp-x{width:38px;height:38px}
+.kp-foot{padding:8px 12px}
+.kp-foot button{padding:10px 8px;font-size:16px}
 }
 `;
 
 let kpPenutup = null;
+let kpUkur = null;
 
 function tutupPreview() {
   const el = document.getElementById('kpOverlay');
@@ -210,6 +219,26 @@ function tutupPreview() {
     document.removeEventListener('keydown', kpPenutup);
     kpPenutup = null;
   }
+  if (kpUkur) {
+    window.removeEventListener('resize', kpUkur);
+    window.removeEventListener('orientationchange', kpUkur);
+    kpUkur = null;
+  }
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+}
+
+function sesuaikanKertas() {
+  const body = document.querySelector('#kpOverlay .kp-body');
+  const skala = document.querySelector('#kpOverlay .kp-skala');
+  const kertas = document.querySelector('#kpOverlay .kp-paper');
+  if (!body || !skala || !kertas) return;
+  const cs = getComputedStyle(body);
+  const lebar = body.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  if (lebar <= 0) return;
+  const k = Math.min(1, lebar / 840);
+  skala.style.width = (840 * k) + 'px';
+  skala.style.height = (592 * k) + 'px';
+  kertas.style.transform = 'scale(' + k + ')';
 }
 
 function previewKuitansi(pid, key) {
@@ -234,24 +263,28 @@ function previewKuitansi(pid, key) {
   const gbr = (src, kelas) => src ? '<img class="' + kelas + '" src="' + esc(src) + '" alt="">' : '';
 
   const kertas =
-    '<div class="kp-paper">' +
+    '<div class="kp-skala"><div class="kp-paper">' +
+    '<div class="kp-frame1"></div><div class="kp-frame2"></div>' +
     '<div class="kp-pc">' + esc(c.namaPC || 'Pengurus Cabang') + '</div>' +
     (c.alamat ? '<div class="kp-alamat">' + esc(c.alamat) + '</div>' : '') +
-    '<hr class="kp-garis">' +
+    '<div class="kp-g1"></div><div class="kp-g2"></div>' +
     '<div class="kp-judul">KUITANSI IURAN COS</div>' +
     '<div class="kp-no">No: ' + esc(i.nomorKuitansi) + '</div>' +
+    '<div class="kp-rows">' +
     baris('Telah terima dari', 'PUK ' + (p.namaPerusahaan || '')) +
     baris('Uang sejumlah', terbilangRupiah(i.total)) +
     baris('Untuk pembayaran', 'Iuran COS periode ' + labelPeriode(key) + ' (' + (i.jumlahAnggota || 0) + ' anggota)') +
     baris('Tanggal setor', fmtTgl(i.tanggalSetor)) +
     baris('Status', teksStatus(i)) +
-    '<div class="kp-bawah">' +
-    '<div class="kp-qrbox">' + (qr ? '<img class="kp-qr" src="' + qr + '" alt="Kode QR kuitansi">' : '') + '<div class="kp-qrcap">Pindai untuk memeriksa data</div></div>' +
+    '</div>' +
+    (qr ? '<img class="kp-qr" src="' + qr + '" alt="Kode QR kuitansi">' : '') +
+    '<div class="kp-qrcap">Pindai untuk memeriksa data</div>' +
     '<div class="kp-total"><small>JUMLAH DITERIMA</small><strong>' + esc(rp(i.total)) + '</strong></div>' +
-    '<div class="kp-ttd"><div>' + esc((c.kota ? c.kota + ', ' : '') + fmtTgl(i.tanggalSetor)) + '</div>' +
-    '<div>' + esc(c.jabatan || 'Bendahara') + '</div>' +
-    '<div class="kp-cap">' + gbr(c.stempel, 'st') + gbr(c.ttd, 'tt') + '</div>' +
-    '<span class="kp-nama">' + esc(c.bendahara || '') + '</span></div>' +
+    '<div class="kp-tgl">' + esc((c.kota ? c.kota + ', ' : '') + fmtTgl(i.tanggalSetor)) + '</div>' +
+    '<div class="kp-jab">' + esc(c.jabatan || 'Bendahara') + '</div>' +
+    gbr(c.stempel, 'kp-st') + gbr(c.ttd, 'kp-tt') +
+    '<div class="kp-nama"><span>' + esc(c.bendahara || '') + '</span></div>' +
+    '<div class="kp-pie">Kuitansi ini diterbitkan melalui sistem Iuran COS.</div>' +
     '</div></div>';
 
   const el = document.createElement('div');
@@ -260,7 +293,7 @@ function previewKuitansi(pid, key) {
   el.innerHTML =
     '<div class="kp-box" role="dialog" aria-modal="true" aria-label="Pratinjau kuitansi">' +
     '<div class="kp-head"><h2>Pratinjau Kuitansi</h2><button type="button" class="kp-x" aria-label="Tutup">&times;</button></div>' +
-    '<div class="kp-body">' + kertas + '</div>' +
+    '<div class="kp-body"><div class="kp-putar">Putar HP ke mode lanskap agar kuitansi tampil lebih besar</div>' + kertas + '</div>' +
     '<div class="kp-foot">' +
     '<button type="button" data-aksi="unduh">Unduh PDF</button>' +
     '<button type="button" class="alt" data-aksi="wa">Kirim WhatsApp</button>' +
@@ -287,6 +320,13 @@ function previewKuitansi(pid, key) {
 
   document.body.appendChild(el);
   document.body.style.overflow = 'hidden';
+  kpUkur = sesuaikanKertas;
+  window.addEventListener('resize', kpUkur);
+  window.addEventListener('orientationchange', kpUkur);
+  sesuaikanKertas();
+  try {
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+  } catch (e) {}
   el.querySelector('.kp-body').scrollTop = 0;
   el.querySelector('button[data-aksi="unduh"]').focus();
 }
