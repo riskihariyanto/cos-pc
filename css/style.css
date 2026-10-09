@@ -1,9 +1,9 @@
-:root{--bg:#f3f5f4;--card:#fff;--ink:#16211f;--mut:#5f6f6b;--line:#dbe3e0;--pri:#0f766e;--pri2:#0b5a54;--ok:#15803d;--warn:#b45309;--bad:#b91c1c}
+:root{--bg:#eef3f9;--card:#fff;--ink:#1a1a1a;--mut:#3d3d3d;--line:#c5d0de;--pri:#0055a5;--pri2:#003f7d;--acc:#e31e24;--acc2:#b9151a;--gold:#fdb913;--ok:#15803d;--warn:#7a4b00;--bad:#e31e24}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 
-header{background:var(--pri);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
+header{background:var(--pri);color:#fff;border-bottom:4px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
 header b{display:block;font-size:16px}
 header small{opacity:.85}
 header button{background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
@@ -27,10 +27,13 @@ textarea{min-height:90px;resize:vertical}
 .btn:hover{background:var(--pri2)}
 .btn.sm{padding:7px 11px;margin:0;font-size:13px}
 .btn.alt{background:#fff;color:var(--pri);border:1px solid var(--pri)}
-.btn.bad{background:var(--bad)}
+.btn.bad{background:var(--acc)}
+.btn.bad:hover{background:var(--acc2)}
+.btn.prev{background:var(--acc);color:#fff;border:0}
+.btn.prev:hover{background:var(--acc2)}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.stat{background:var(--bg);border-radius:10px;padding:10px}
+.stat{background:var(--bg);border-radius:10px;padding:10px;border-left:5px solid var(--gold)}
 .stat span{display:block;font-size:12px;color:var(--mut)}
 .stat b{font-size:18px}
 .hint{font-size:13px;color:var(--mut);margin:8px 0 0}
@@ -42,8 +45,8 @@ textarea{min-height:90px;resize:vertical}
 
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
 .b-Lunas{background:#dcfce7;color:var(--ok)}
-.b-Pending{background:#fef3c7;color:var(--warn)}
-.b-Ditolak,.b-Menunggak{background:#fee2e2;color:var(--bad)}
+.b-Pending{background:var(--gold);color:var(--ink)}
+.b-Ditolak,.b-Menunggak{background:#fee2e2;color:#9f1217}
 .b-Belum{background:#e5e7eb;color:#374151}
 
 .tw{overflow-x:auto}
@@ -58,6 +61,6 @@ td.r,th.r{text-align:right}
 #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 #loginView .card{width:100%;max-width:380px}
 #busy{position:fixed;inset:0;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;z-index:20;font-weight:600}
-#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#16211f;color:#fff;padding:10px 16px;border-radius:10px;z-index:30;max-width:90%;text-align:center}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:30;max-width:90%;text-align:center}
 
 .pv{max-height:70px;margin-top:8px;border:1px dashed var(--line);border-radius:6px;padding:4px;background:#fff}
