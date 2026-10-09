@@ -1,9 +1,11 @@
-const VERSI = 'cos-v3';
+const VERSI = 'cos-v4';
 
 const SHELL = [
   './',
   './index.html',
   './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   './css/style.css',
   './js/config.js',
   './js/util.js',
