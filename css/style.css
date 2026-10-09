@@ -6,7 +6,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-ap
 header{background:var(--pri);color:#fff;border-bottom:4px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
 header b{display:block;font-size:16px}
 header small{opacity:.85}
-header button{background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+header button{background:#fff;color:var(--acc);border:2px solid var(--acc);border-radius:8px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+header button:hover{background:var(--acc);color:#fff;border-color:#fff}
 
 nav{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:58px;z-index:4}
 nav button{flex:none;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer}
@@ -29,8 +30,8 @@ textarea{min-height:90px;resize:vertical}
 .btn.alt{background:#fff;color:var(--pri);border:1px solid var(--pri)}
 .btn.bad{background:var(--acc)}
 .btn.bad:hover{background:var(--acc2)}
-.btn.prev{background:var(--acc);color:#fff;border:0}
-.btn.prev:hover{background:var(--acc2)}
+.btn.prev{background:var(--gold);color:var(--ink);border:2px solid var(--ink)}
+.btn.prev:hover{background:#e0a30c}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .stat{background:var(--bg);border-radius:10px;padding:10px;border-left:5px solid var(--gold)}
