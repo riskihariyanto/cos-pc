@@ -82,7 +82,7 @@ function viewPUK() {
 
 async function tambahPUK() {
   const v = id => $(id).value.trim();
-  const nama = v('pNama'), ketua = v('pKetua'), jml = +v('pJumlah'), tarif = +v('pTarif'), email = v('pEmail'), pass = $('pPass').value;
+  const nama = v('pNama'), ketua = v('pKetua'), jml = +v('pJumlah'), tarif = angka($('pTarif').value), email = v('pEmail'), pass = $('pPass').value;
   if (!nama || !ketua || !(jml > 0) || !(tarif > 0) || !email || pass.length < 6) return toast('Lengkapi data, sandi minimal 6 karakter');
 
   const ok = await jalankan(async () => {
@@ -108,10 +108,11 @@ function editPUK(pid) {
   if (!p) return;
   const j = prompt('Jumlah anggota aktif', p.jumlahAnggota);
   if (j === null) return;
-  const t = prompt('Tarif per anggota (Rp)', p.tarifPerAnggota);
+  const t = prompt('Tarif per anggota (Rp)', ribuan(p.tarifPerAnggota));
   if (t === null) return;
-  if (!(+j > 0) || !(+t > 0)) return toast('Nilai tidak valid');
-  jalankan(() => db.ref('puk/' + pid).update({ jumlahAnggota: +j, tarifPerAnggota: +t }), 'Data PUK diperbarui');
+  const tarif = angka(t);
+  if (!(+j > 0) || !(tarif > 0)) return toast('Nilai tidak valid');
+  jalankan(() => db.ref('puk/' + pid).update({ jumlahAnggota: +j, tarifPerAnggota: tarif }), 'Data PUK diperbarui');
 }
 
 function setTahunLap() {
