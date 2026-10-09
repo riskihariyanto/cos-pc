@@ -14,21 +14,18 @@ function viewSetor() {
   const opts = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i === now.getMonth() ? ' selected' : '') + '>' + n + '</option>').join('');
   const bukti = S.tmp.bukti || '';
   return '<section class="card"><h2>' + esc(p.namaPerusahaan || '') + '</h2>' +
-    '<div class="grid">' +
-    '<div class="stat"><span>Anggota aktif</span><b>' + jml + '</b></div>' +
-    '<div class="stat"><span>Tarif per anggota</span><b>' + rp(tarif) + '</b></div>' +
-    '<div class="stat"><span>Total seharusnya</span><b>' + rp(jml * tarif) + '</b></div>' +
-    '</div></section>' +
+    '<div class="stat"><span>Total yang harus disetor</span><b>' + rp(jml * tarif) + '</b></div>' +
+    '<p class="hint">' + jml + ' anggota × ' + rp(tarif) + '</p></section>' +
     '<section class="card"><h3>Bayar tunai</h3>' +
-    '<p class="hint">Serahkan uang iuran langsung ke Admin PC. Tidak perlu mengirim apa pun di sini. Setelah Admin PC mengonfirmasi, kuitansi muncul otomatis di menu Riwayat dan siap diunduh.</p></section>' +
+    '<p class="hint">Serahkan uang langsung ke Admin PC. Setelah dikonfirmasi, kuitansi muncul di menu Riwayat.</p></section>' +
     '<section class="card"><h3>Bayar lewat transfer</h3>' +
     '<label for="fBulan">Bulan</label><select id="fBulan">' + opts + '</select>' +
     '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + now.getFullYear() + '">' +
     '<label for="fTotal">Jumlah yang ditransfer (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + (jml * tarif) + '">' +
     '<label for="fTanggal">Tanggal transfer</label><input id="fTanggal" type="date" value="' + hari + '">' +
     '<label for="fBukti">Foto bukti transfer</label><input id="fBukti" type="file" accept="image/*" onchange="pilihBukti(this)">' +
-    (bukti ? '<img src="' + bukti + '" alt="Bukti transfer" style="display:block;max-width:100%;max-height:260px;margin-top:10px;border:1px solid var(--line);border-radius:8px">' : '<p class="hint">Belum ada foto dipilih.</p>') +
-    '<p class="hint">Jumlah dikosongkan = ' + rp(jml * tarif) + '. Setelah dikirim, bukti masuk antrean Admin PC dan kuitansi terbit setelah dikonfirmasi.</p>' +
+    (bukti ? '<img src="' + bukti + '" alt="Bukti transfer" style="display:block;max-width:100%;max-height:260px;margin-top:10px;border:2px solid var(--pri);border-radius:8px">' : '<p class="hint">Belum ada foto dipilih.</p>') +
+    '<p class="hint">Jumlah dikosongkan = ' + rp(jml * tarif) + '.</p>' +
     '<button class="btn" onclick="submitSetor()">Kirim bukti transfer</button></section>';
 }
 
@@ -125,7 +122,7 @@ function viewRiwayat() {
     const catatan = siap ? '<br>' + esc(i.nomorKuitansi)
       : i.status === 'Ditolak' ? '<br>Ditolak. Kirim ulang bukti transfer di menu Setor COS.'
       : '<br>Menunggu konfirmasi Admin PC. Kuitansi terbit setelah dikonfirmasi.';
-    const aksi = siap ? '<div class="act"><button class="btn sm" onclick="previewKuitansi(\'' + pid + '\',\'' + k + '\')">Preview Kuitansi</button>' +
+    const aksi = siap ? '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(\'' + pid + '\',\'' + k + '\')">Preview Kuitansi</button>' +
       '<button class="btn sm" onclick="unduhKuitansi(\'' + pid + '\',\'' + k + '\')">Unduh PDF</button>' +
       '<button class="btn sm alt" onclick="kirimWA(\'' + pid + '\',\'' + k + '\')">WhatsApp</button></div>' : '';
     return '<div class="row"><div class="info"><b>' + esc(labelPeriode(k)) + '</b> ' + badge(i.status) + '<br>' +
