@@ -56,7 +56,7 @@ function buatPDF(pid, key) {
   d.setTextColor(26, 26, 26);
   d.setFont('helvetica', 'bold');
   d.setFontSize(13);
-  d.text('KUITANSI IURAN COS', tengah, 39, { align: 'center' });
+  d.text('KUITANSI IURAN COS PC', tengah, 39, { align: 'center' });
   d.setFont('helvetica', 'normal');
   d.setFontSize(9);
   d.setTextColor(85, 85, 85);
@@ -79,7 +79,7 @@ function buatPDF(pid, key) {
 
   baris('Telah terima dari', 'PUK ' + (p.namaPerusahaan || ''));
   baris('Uang sejumlah', terbilangRupiah(i.total));
-  baris('Untuk pembayaran', 'Iuran COS periode ' + labelPeriode(key) + ' (' + (i.jumlahAnggota || 0) + ' anggota)');
+  baris('Untuk pembayaran', 'Iuran COS periode ' + labelPeriode(key));
   baris('Tanggal setor', fmtTgl(i.tanggalSetor));
   baris('Status', teksStatus(i));
 
@@ -268,12 +268,12 @@ function previewKuitansi(pid, key) {
     '<div class="kp-pc">' + esc(c.namaPC || 'Pengurus Cabang') + '</div>' +
     (c.alamat ? '<div class="kp-alamat">' + esc(c.alamat) + '</div>' : '') +
     '<div class="kp-g1"></div><div class="kp-g2"></div>' +
-    '<div class="kp-judul">KUITANSI IURAN COS</div>' +
+    '<div class="kp-judul">KUITANSI IURAN COS PC</div>' +
     '<div class="kp-no">No: ' + esc(i.nomorKuitansi) + '</div>' +
     '<div class="kp-rows">' +
     baris('Telah terima dari', 'PUK ' + (p.namaPerusahaan || '')) +
     baris('Uang sejumlah', terbilangRupiah(i.total)) +
-    baris('Untuk pembayaran', 'Iuran COS periode ' + labelPeriode(key) + ' (' + (i.jumlahAnggota || 0) + ' anggota)') +
+    baris('Untuk pembayaran', 'Iuran COS periode ' + labelPeriode(key)) +
     baris('Tanggal setor', fmtTgl(i.tanggalSetor)) +
     baris('Status', teksStatus(i)) +
     '</div>' +
