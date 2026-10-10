@@ -118,6 +118,10 @@ function panelStatusBayar() {
     baris + '</section>';
 }
 
+function viewDasbor() {
+  return panelStatusBayar() || '<section class="card"><h3>Status Bayar</h3><p class="hint">Belum ada data PUK.</p></section>';
+}
+
 function tglCetak(i) {
   return i.tanggalCetak || i.tanggalVerifikasi || i.tanggalSetor || '';
 }
@@ -175,7 +179,7 @@ function viewRiwayatKuitansi() {
       '<div class="rk-info"><span class="rk-periode">' + esc(labelPeriode(i.key)) + '</span>' +
       '<span class="rk-nominal">' + rp(i.total) + '</span></div></article>';
   }).join('');
-  return panelStatusBayar() + '<section class="card rk"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
+  return '<section class="card rk"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
     '<label for="rPuk">Cari nama PUK</label>' +
     '<input id="rPuk" type="search" autocomplete="off" placeholder="Ketik nama PUK" value="' + esc(S.tmp.rPuk || '') + '" oninput="ubahFilterRiwayat()">' +
     '<label for="rPer">Periode</label>' +
@@ -263,7 +267,7 @@ function viewCatat() {
     opsi.map(o => '<option value="' + esc(o.nilai) + '"' + (o.nilai === pilih ? ' selected' : '') + '>PUK ' + esc(o.nama) + '</option>').join('') +
     '<option value="__baru"' + (pilih === '__baru' ? ' selected' : '') + '>+ PUK baru (ketik nama sendiri)</option>';
   const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === b ? ' selected' : '') + '>' + n + '</option>').join('');
-  const kepala = panelStatusBayar() + '<section class="card"><h3>Buat Kuitansi Iuran</h3>' +
+  const kepala = '<section class="card"><h3>Buat Kuitansi Iuran</h3>' +
     '<label for="fPukPilih">Nama PUK</label>' +
     '<select id="fPukPilih" onchange="ubahPUKCatat()">' + optPuk + '</select>' +
     (pilih === '__baru' ? '<label for="fPuk">Nama PUK baru</label><input id="fPuk" autocomplete="off" placeholder="Ketik nama PUK, tanpa kata PUK" value="' + esc(nama) + '" onchange="ubahPUKCatat()">' : '') +
