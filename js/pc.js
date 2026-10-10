@@ -103,6 +103,8 @@ function sudahBayarBulanIni(pid) {
   return !!(pid && periodeKunci((S.iuran[pid] || {})[key]));
 }
 
+const IKON_PABRIK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V10l6 3.5V10l6 3.5V6h3v15z"/><path d="M7 17h2M12 17h2M17 17h1"/></svg>';
+
 function panelStatusBayar() {
   const now = new Date();
   const daftar = daftarPilihanPUK().map(o => {
@@ -110,12 +112,16 @@ function panelStatusBayar() {
     return { nama: o.nama, lunas: sudahBayarBulanIni(pid) };
   }).sort((a, b) => (a.lunas - b.lunas) || a.nama.localeCompare(b.nama));
   if (!daftar.length) return '';
-  const belum = daftar.filter(x => !x.lunas).length;
-  const baris = daftar.map(x =>
-    '<div class="row sb-baris"><div class="info"><b>PUK ' + esc(x.nama) + '</b></div>' + lencanaBayar(x.lunas) + '</div>').join('');
-  return '<section class="card sb"><h3>Status Bayar ' + esc(BULAN[now.getMonth()] + ' ' + now.getFullYear()) + '</h3>' +
-    '<p class="hint">' + (belum ? '<b>' + belum + ' PUK belum bayar</b> dari ' + daftar.length + ' PUK' : 'Semua PUK sudah bayar') + '</p>' +
-    baris + '</section>';
+  const lunas = daftar.filter(x => x.lunas).length;
+  const belum = daftar.length - lunas;
+  const kartu = daftar.map(x =>
+    '<article class="sb-puk"><span class="sb-ikon">' + IKON_PABRIK + '</span>' +
+    '<span class="sb-nama">PUK ' + esc(x.nama) + '</span>' + lencanaBayar(x.lunas) + '</article>').join('');
+  return '<section class="sb"><h3 class="sb-judul">Status Bayar ' + esc(BULAN[now.getMonth()] + ' ' + now.getFullYear()) + '</h3>' +
+    '<div class="sb-ringkas">' +
+    '<div class="sb-stat sb-stat-lunas"><span class="sb-stat-label">Lunas</span><b class="sb-stat-angka">' + lunas + '</b></div>' +
+    '<div class="sb-stat sb-stat-belum"><span class="sb-stat-label">Belum Bayar</span><b class="sb-stat-angka">' + belum + '</b></div>' +
+    '</div>' + kartu + '</section>';
 }
 
 function viewDasbor() {
