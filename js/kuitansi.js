@@ -523,3 +523,25 @@ function bagikanWAPratinjau(tombol) {
     setTimeout(() => { window.open('https://wa.me/?text=' + encodeURIComponent(teks), '_blank'); }, 700);
   });
 }
+
+function kirimPDFWA(tombol, pid, key) {
+  const i = (S.iuran[pid] || {})[key];
+  if (!i) return toast('Data kuitansi tidak ditemukan');
+  const nama = (S.puk[pid] || {}).namaPerusahaan || '';
+  const teks = 'Kuitansi iuran COS PUK ' + nama + ' periode ' + labelPeriode(key) + '\nNo: ' + (i.nomorKuitansi || '-');
+  denganTombol(tombol, async () => {
+    const blob = buatPDF(pid, key).output('blob');
+    const berkas = new File([blob], namaBerkasKuitansi(pid, key, 'pdf'), { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [berkas] })) {
+      try {
+        await navigator.share({ files: [berkas], title: 'Kuitansi Iuran COS', text: teks });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+      }
+    }
+    unduhBlob(blob, berkas.name);
+    toast('PDF tersimpan. Lampirkan di WhatsApp.');
+    setTimeout(() => { window.open('https://wa.me/?text=' + encodeURIComponent(teks), '_blank'); }, 700);
+  });
+}
