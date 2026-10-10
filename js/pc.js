@@ -56,6 +56,20 @@ function ubahPeriodeCatat() {
   render();
 }
 
+function daftarPilihanPUK() {
+  const out = [];
+  const terpakai = {};
+  PUK_AWAL.forEach(n => {
+    const pid = cariPUK(n);
+    if (pid) terpakai[pid] = true;
+    out.push({ nilai: pid || 'awal:' + n, nama: pid ? S.puk[pid].namaPerusahaan : n });
+  });
+  sortedPUK().forEach(pid => {
+    if (!terpakai[pid] && jumlahKuitansiPUK(pid) > 0) out.push({ nilai: pid, nama: S.puk[pid].namaPerusahaan });
+  });
+  return out;
+}
+
 function ubahPUKCatat() {
   const pil = $('fPukPilih').value;
   if (pil === '__baru') {
@@ -63,7 +77,8 @@ function ubahPUKCatat() {
     S.tmp.pukNama = $('fPuk') ? bersihNamaPUK($('fPuk').value) : '';
   } else {
     S.tmp.pukBaru = false;
-    S.tmp.pukNama = pil ? (S.puk[pil] || {}).namaPerusahaan || '' : '';
+    const o = daftarPilihanPUK().filter(x => x.nilai === pil)[0];
+    S.tmp.pukNama = o ? o.nama : '';
   }
   render();
 }
@@ -169,16 +184,17 @@ function viewCatat() {
   const { b, t } = periodeCatat();
   const key = periodeKey(t, b);
   const ada = pid ? (S.iuran[pid] || {})[key] : null;
-  const pilih = S.tmp.pukBaru ? '__baru' : (pid || '');
+  const opsi = daftarPilihanPUK();
+  const cocok = opsi.filter(o => normNama(o.nama) === normNama(nama))[0];
+  const pilih = S.tmp.pukBaru ? '__baru' : (cocok ? cocok.nilai : '');
   const optPuk = '<option value="">Pilih nama PUK</option>' +
-    sortedPUK().map(id => '<option value="' + esc(id) + '"' + (id === pilih ? ' selected' : '') + '>PUK ' + esc(S.puk[id].namaPerusahaan) + '</option>').join('') +
+    opsi.map(o => '<option value="' + esc(o.nilai) + '"' + (o.nilai === pilih ? ' selected' : '') + '>PUK ' + esc(o.nama) + '</option>').join('') +
     '<option value="__baru"' + (pilih === '__baru' ? ' selected' : '') + '>+ PUK baru (ketik nama sendiri)</option>';
   const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === b ? ' selected' : '') + '>' + n + '</option>').join('');
   const kepala = '<section class="card"><h3>Buat Kuitansi Iuran</h3>' +
     '<label for="fPukPilih">Nama PUK</label>' +
     '<select id="fPukPilih" onchange="ubahPUKCatat()">' + optPuk + '</select>' +
     (pilih === '__baru' ? '<label for="fPuk">Nama PUK baru</label><input id="fPuk" autocomplete="off" placeholder="Ketik nama PUK, tanpa kata PUK" value="' + esc(nama) + '" onchange="ubahPUKCatat()">' : '') +
-    (!sortedPUK().length ? '<p class="hint">Belum ada PUK. Tambahkan di menu Pengaturan, atau pilih "PUK baru".</p>' : '') +
     '<label for="fBulan">Bulan</label><select id="fBulan" onchange="ubahPeriodeCatat()">' + optBulan + '</select>' +
     '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + t + '" onchange="ubahPeriodeCatat()">';
 
@@ -195,7 +211,8 @@ function viewCatat() {
 
 async function catatSetoran() {
   const pil = $('fPukPilih').value;
-  const nama = pil === '__baru' ? bersihNamaPUK($('fPuk') ? $('fPuk').value : '') : ((S.puk[pil] || {}).namaPerusahaan || '');
+  const dipilih = daftarPilihanPUK().filter(x => x.nilai === pil)[0];
+  const nama = pil === '__baru' ? bersihNamaPUK($('fPuk') ? $('fPuk').value : '') : (dipilih ? dipilih.nama : '');
   const metode = $('fMetode').value === 'Transfer' ? 'Transfer' : 'Tunai';
   const bulan = +$('fBulan').value;
   const tahun = +$('fTahun').value;
@@ -263,76 +280,11 @@ function jumlahKuitansiPUK(pid) {
   return Object.keys(per).filter(k => per[k].status === 'Lunas' && nomorTerbit(per[k])).length;
 }
 
-function viewDaftarPUK() {
-  const ids = sortedPUK();
-  const belum = PUK_AWAL.filter(n => !cariPUK(n));
-  const baris = ids.map(pid => {
-    const n = S.puk[pid].namaPerusahaan || '';
-    const pakai = jumlahKuitansiPUK(pid);
-    return '<div class="row"><div class="info"><b>PUK ' + esc(n) + '</b><br><span class="hint">' + pakai + ' kuitansi</span></div>' +
-      '<div class="act"><button class="btn sm alt" onclick="ubahNamaPUK(\'' + pid + '\')">Ubah Nama</button>' +
-      (pakai ? '' : '<button class="btn sm alt btn-batal" onclick="hapusPUK(\'' + pid + '\')">Hapus</button>') +
-      '</div></div>';
-  }).join('');
-  return '<section class="card"><h3>Daftar PUK (' + ids.length + ')</h3>' +
-    '<label for="fPukBaru">Tambah PUK baru</label>' +
-    '<input id="fPukBaru" autocomplete="off" placeholder="Contoh: MAYORA Jayanti 3">' +
-    '<p class="hint">Tulis nama tanpa kata "PUK". Di kuitansi otomatis tertulis "PUK ...".</p>' +
-    '<button class="btn" onclick="tambahPUK()">Tambah PUK</button>' +
-    (belum.length ? '<button class="btn alt" onclick="tambahPUKAwal()">Tambahkan PUK Awal (' + belum.length + ')</button>' : '') +
-    (baris || '<p class="hint">Belum ada PUK.</p>') + '</section>';
-}
-
-async function tambahPUK() {
-  const nama = bersihNamaPUK($('fPukBaru').value);
-  if (!nama) return toast('Isi nama PUK');
-  if (nama.length > 150) return toast('Nama PUK terlalu panjang');
-  if (cariPUK(nama)) return toast('PUK ini sudah ada di daftar');
-  const ok = await jalankan(async () => {
-    await db.ref('puk').push({ namaPerusahaan: nama });
-    return true;
-  }, 'PUK ditambahkan');
-  if (ok && $('fPukBaru')) $('fPukBaru').value = '';
-}
-
-async function tambahPUKAwal() {
-  const baru = PUK_AWAL.filter(n => !cariPUK(n));
-  if (!baru.length) return toast('Semua PUK awal sudah ada');
-  await jalankan(async () => {
-    for (const n of baru) await db.ref('puk').push({ namaPerusahaan: n });
-    return true;
-  }, baru.length + ' PUK ditambahkan');
-}
-
-async function ubahNamaPUK(pid) {
-  const lama = (S.puk[pid] || {}).namaPerusahaan || '';
-  const input = window.prompt('Ubah nama PUK (tanpa kata "PUK"):', lama);
-  if (input === null) return;
-  const baru = bersihNamaPUK(input);
-  if (!baru) return toast('Nama PUK tidak boleh kosong');
-  if (baru === lama) return;
-  const lain = cariPUK(baru);
-  if (lain && lain !== pid) return toast('Nama itu sudah dipakai PUK lain');
-  await jalankan(() => db.ref('puk/' + pid + '/namaPerusahaan').set(baru), 'Nama PUK diubah');
-}
-
-async function hapusPUK(pid) {
-  const n = (S.puk[pid] || {}).namaPerusahaan || '';
-  if (jumlahKuitansiPUK(pid)) return toast('PUK ini sudah punya kuitansi, tidak bisa dihapus');
-  if (!window.confirm('Hapus PUK ' + n + ' dari daftar?')) return;
-  await jalankan(async () => {
-    const sisa = Object.keys(S.iuran[pid] || {});
-    for (const k of sisa) await db.ref('iuran/' + pid + '/' + k).remove();
-    await db.ref('puk/' + pid).remove();
-    return true;
-  }, 'PUK dihapus');
-}
-
 function viewPengaturan() {
   const c = S.pengaturan || {};
   const img = k => S.tmp[k] || c[k] || '';
   const pv = k => '<img class="pv" id="pv_' + k + '" src="' + img(k) + '"' + (img(k) ? '' : ' hidden') + '>';
-  return viewDaftarPUK() + '<section class="card"><h3>Identitas PC & penandatangan kuitansi</h3>' +
+  return '<section class="card"><h3>Identitas PC & penandatangan kuitansi</h3>' +
     '<label for="sNama">Nama Pengurus Cabang</label><input id="sNama" value="' + esc(c.namaPC) + '">' +
     '<label for="sAlamat">Alamat</label><input id="sAlamat" value="' + esc(c.alamat) + '">' +
     '<label for="sKota">Kota (untuk tanggal kuitansi)</label><input id="sKota" value="' + esc(c.kota) + '">' +
