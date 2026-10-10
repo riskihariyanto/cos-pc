@@ -320,17 +320,19 @@ const GAYA_PRATINJAU = `
 .kertas{position:absolute;left:0;top:0;width:840px;height:592px;background:#fff;overflow:hidden;transform-origin:0 0;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a}
 .kertas .kt{position:absolute;white-space:nowrap;line-height:1.15;margin:0}
 .kertas .kb{position:absolute;display:block;box-sizing:border-box}
-.pv-petunjuk{display:none;margin:0;padding:8px 14px;background:#fff7d6;color:#5c3d00;font-size:16px;font-weight:600;text-align:center}
-.pv-act{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--line)}
-.pv-act button{min-height:58px;padding:12px 14px;font:inherit;font-size:18px;font-weight:700;border-radius:12px;cursor:pointer;border:3px solid var(--pri);background:#fff;color:var(--pri)}
-.pv-act .pv-pdf{background:var(--pri);color:#fff}
-.pv-act .pv-wa{grid-column:1/-1;background:#1fa855;border-color:#14532d;color:#fff}
+.pv-act{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px max(14px,calc((100% - 560px)/2)) calc(14px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--line)}
+.pv-act button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;margin:0;padding:12px 10px;font:inherit;font-size:17px;font-weight:700;border-radius:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pv-act .pv-wa{grid-column:1/-1;min-height:60px;font-size:19px;background:#25d366;border:0;color:#052e16;box-shadow:0 4px 14px rgba(37,211,102,.38)}
+.pv-act .pv-wa:active{background:#1fb858}
+.pv-act .pv-wa svg{width:26px;height:26px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pv-act .pv-pdf,.pv-act .pv-foto{background:#fff;border:2px solid var(--pri);color:var(--pri)}
+.pv-act .pv-pdf:active,.pv-act .pv-foto:active{background:#e8f0fa}
 .pv-act button:disabled{opacity:.6;cursor:wait}
 .pv-gudang{position:absolute;left:0;top:0;width:840px;height:592px;z-index:-1;pointer-events:none}
 .pv-gudang .kertas{position:relative}
-@media (orientation:portrait) and (max-width:720px){.pv-petunjuk{display:block}}
-@media (min-width:720px){.pv-act{grid-template-columns:repeat(3,1fr)}.pv-act .pv-wa{grid-column:auto}}
 `;
+
+const IKON_WA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5.2A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 8.5c0 3.3 2.7 6 6 6l1.3-1.6-2-1-.9.8a4 4 0 0 1-1.7-1.7l.8-.9-1-2z"/></svg>';
 
 function pasangGayaPratinjau() {
   if ($('gayaPratinjau')) return;
@@ -376,11 +378,10 @@ function previewKuitansi(pid, key) {
   ov.innerHTML =
     '<div class="pv-bar"><b>Pratinjau Kuitansi</b><button type="button" class="pv-x" onclick="tutupPreview()">Tutup</button></div>' +
     '<div class="pv-stage" id="pvStage"><div class="pv-wrap" id="pvWrap">' + htmlKertas(m) + '</div></div>' +
-    '<p class="pv-petunjuk">Putar HP ke samping agar kuitansi tampil lebih besar.</p>' +
     '<div class="pv-act">' +
+    '<button type="button" class="pv-wa" onclick="bagikanWAPratinjau(this)">' + IKON_WA + '<span>WhatsApp (Foto)</span></button>' +
     '<button type="button" class="pv-pdf" onclick="unduhPDFPratinjau()">Unduh PDF</button>' +
     '<button type="button" class="pv-foto" onclick="unduhFotoPratinjau(this)">Unduh Foto</button>' +
-    '<button type="button" class="pv-wa" onclick="bagikanWAPratinjau(this)">WhatsApp (Foto)</button>' +
     '</div>';
   document.body.appendChild(ov);
   document.body.classList.add('pv-buka');
@@ -430,10 +431,8 @@ function tutupPreview() {
   bersihPratinjau();
 }
 
-function buatFotoBlob() {
+function fotoDariKertas(sumber) {
   if (!window.html2canvas) return Promise.reject(new Error('Pustaka foto belum dimuat'));
-  const sumber = $('pvKertas');
-  if (!sumber) return Promise.reject(new Error('Pratinjau tidak aktif'));
   const gudang = document.createElement('div');
   gudang.className = 'pv-gudang';
   const salin = sumber.cloneNode(true);
@@ -448,6 +447,25 @@ function buatFotoBlob() {
     .finally(() => gudang.remove());
 }
 
+function buatFotoBlob() {
+  const sumber = $('pvKertas');
+  if (!sumber) return Promise.reject(new Error('Pratinjau tidak aktif'));
+  return fotoDariKertas(sumber);
+}
+
+function unduhFotoRiwayat(pid, key) {
+  const i = (S.iuran[pid] || {})[key];
+  if (!i) return toast('Data kuitansi tidak ditemukan');
+  return jalankan(async () => {
+    pasangGayaPratinjau();
+    const m = susunKuitansi(new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a5' }), pid, key);
+    const wadah = document.createElement('div');
+    wadah.innerHTML = htmlKertas(m);
+    const blob = await fotoDariKertas(wadah.firstChild);
+    unduhBlob(blob, namaBerkasKuitansi(pid, key, 'png'));
+  }, 'Foto kuitansi tersimpan');
+}
+
 function ambilFoto() {
   if (!pvFoto) {
     pvFoto = buatFotoBlob();
@@ -457,7 +475,7 @@ function ambilFoto() {
 }
 
 async function denganTombol(tombol, fn) {
-  const label = tombol.textContent;
+  const label = tombol.innerHTML;
   tombol.disabled = true;
   tombol.textContent = 'Menyiapkan...';
   try {
@@ -466,7 +484,7 @@ async function denganTombol(tombol, fn) {
     toast('Gagal: ' + pesan(e));
   } finally {
     tombol.disabled = false;
-    tombol.textContent = label;
+    tombol.innerHTML = label;
   }
 }
 
