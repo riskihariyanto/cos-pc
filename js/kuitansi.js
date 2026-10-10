@@ -35,9 +35,34 @@ function svgQR(teks) {
       if (q.isDark(r, c)) p += 'M' + c + ' ' + r + 'h1v1h-1z';
     }
   }
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + n + ' ' + n + '" shape-rendering="crispEdges">' +
+  const ukuran = n * 8;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + ukuran + '" height="' + ukuran + '" viewBox="0 0 ' + n + ' ' + n + '" shape-rendering="crispEdges">' +
     '<rect width="' + n + '" height="' + n + '" fill="#fff"/><path d="' + p + '" fill="#000"/></svg>';
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function urlQR(teks) {
+  try {
+    const q = buatQR(teks);
+    const n = q.getModuleCount();
+    const sel = Math.max(4, Math.ceil(600 / n));
+    const cv = document.createElement('canvas');
+    cv.width = n * sel;
+    cv.height = n * sel;
+    const g = cv.getContext('2d');
+    if (!g) return svgQR(teks);
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, 0, cv.width, cv.height);
+    g.fillStyle = '#000000';
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (q.isDark(r, c)) g.fillRect(c * sel, r * sel, sel, sel);
+      }
+    }
+    return cv.toDataURL('image/png');
+  } catch (e) {
+    return svgQR(teks);
+  }
 }
 
 function hitungGambar(d, src, x, y, maxW, maxH, rata) {
@@ -268,7 +293,7 @@ function htmlKertas(m) {
     h.push(elTeks(':', 55, b.y, 10, { warna: abu }));
     h.push(elTeks(b.lines, 59, b.y, 10, { tebal: true, warna: b.label === 'Status' ? '#15803d' : '#1a1a1a' }));
   });
-  h.push('<img class="kb" alt="" src="' + svgQR(m.qrTeks) + '" style="left:' + mm(16) + ';top:' + mm(92) + ';width:' + mm(28) + ';height:' + mm(28) + '">');
+  h.push('<img class="kb" alt="" src="' + urlQR(m.qrTeks) + '" style="left:' + mm(16) + ';top:' + mm(92) + ';width:' + mm(28) + ';height:' + mm(28) + '">');
   h.push(elTeks('Pindai untuk memeriksa data', 30, 123, 6.5, { warna: abu, tengah: true }));
   h.push(elKotak(52, 96, 66, 16, 'background:#f8f9fa;border:1px solid #bec4cc;border-radius:7px'));
   h.push(elTeks('JUMLAH DITERIMA', 85, 100.6, 7, { warna: abu, tengah: true }));
