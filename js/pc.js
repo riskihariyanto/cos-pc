@@ -57,7 +57,14 @@ function ubahPeriodeCatat() {
 }
 
 function ubahPUKCatat() {
-  S.tmp.pukNama = $('fPuk').value.replace(/\s+/g, ' ').trim();
+  const pil = $('fPukPilih').value;
+  if (pil === '__baru') {
+    S.tmp.pukBaru = true;
+    S.tmp.pukNama = $('fPuk') ? bersihNamaPUK($('fPuk').value) : '';
+  } else {
+    S.tmp.pukBaru = false;
+    S.tmp.pukNama = pil ? (S.puk[pil] || {}).namaPerusahaan || '' : '';
+  }
   render();
 }
 
@@ -162,12 +169,16 @@ function viewCatat() {
   const { b, t } = periodeCatat();
   const key = periodeKey(t, b);
   const ada = pid ? (S.iuran[pid] || {})[key] : null;
-  const daftar = sortedPUK().map(id => '<option value="' + esc(S.puk[id].namaPerusahaan) + '"></option>').join('');
+  const pilih = S.tmp.pukBaru ? '__baru' : (pid || '');
+  const optPuk = '<option value="">Pilih nama PUK</option>' +
+    sortedPUK().map(id => '<option value="' + esc(id) + '"' + (id === pilih ? ' selected' : '') + '>PUK ' + esc(S.puk[id].namaPerusahaan) + '</option>').join('') +
+    '<option value="__baru"' + (pilih === '__baru' ? ' selected' : '') + '>+ PUK baru (ketik nama sendiri)</option>';
   const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === b ? ' selected' : '') + '>' + n + '</option>').join('');
   const kepala = '<section class="card"><h3>Buat Kuitansi Iuran</h3>' +
-    '<label for="fPuk">Nama PUK</label>' +
-    '<input id="fPuk" list="dlPuk" autocomplete="off" placeholder="Ketik atau pilih nama PUK" value="' + esc(nama) + '" onchange="ubahPUKCatat()">' +
-    '<datalist id="dlPuk">' + daftar + '</datalist>' +
+    '<label for="fPukPilih">Nama PUK</label>' +
+    '<select id="fPukPilih" onchange="ubahPUKCatat()">' + optPuk + '</select>' +
+    (pilih === '__baru' ? '<label for="fPuk">Nama PUK baru</label><input id="fPuk" autocomplete="off" placeholder="Ketik nama PUK, tanpa kata PUK" value="' + esc(nama) + '" onchange="ubahPUKCatat()">' : '') +
+    (!sortedPUK().length ? '<p class="hint">Belum ada PUK. Tambahkan di menu Pengaturan, atau pilih "PUK baru".</p>' : '') +
     '<label for="fBulan">Bulan</label><select id="fBulan" onchange="ubahPeriodeCatat()">' + optBulan + '</select>' +
     '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + t + '" onchange="ubahPeriodeCatat()">';
 
@@ -183,7 +194,8 @@ function viewCatat() {
 }
 
 async function catatSetoran() {
-  const nama = bersihNamaPUK($('fPuk').value);
+  const pil = $('fPukPilih').value;
+  const nama = pil === '__baru' ? bersihNamaPUK($('fPuk') ? $('fPuk').value : '') : ((S.puk[pil] || {}).namaPerusahaan || '');
   const metode = $('fMetode').value === 'Transfer' ? 'Transfer' : 'Tunai';
   const bulan = +$('fBulan').value;
   const tahun = +$('fTahun').value;
