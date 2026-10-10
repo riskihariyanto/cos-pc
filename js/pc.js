@@ -143,15 +143,12 @@ function viewRiwayatKuitansi() {
   const kartu = list.map(i => {
     const p = S.puk[i.pid] || {};
     return '<article class="rk-item">' +
+      '<div class="rk-kepala"><div class="rk-teks">' +
       '<div class="rk-nama">' + esc(p.namaPerusahaan || '-') + '</div>' +
-      '<div class="rk-nomor">' + esc(i.nomorKuitansi) + '</div>' +
+      '<div class="rk-nomor">' + esc(i.nomorKuitansi) + '</div></div>' +
+      '<button type="button" class="rk-menu" aria-label="Opsi kuitansi" aria-haspopup="menu" onclick="bukaMenuKuitansi(event,' + arg(i) + ')">' + IKON_TITIK + '</button></div>' +
       '<div class="rk-info"><span class="rk-periode">' + esc(labelPeriode(i.key)) + '</span>' +
-      '<span class="rk-nominal">' + rp(i.total) + '</span></div>' +
-      '<div class="rk-aksi">' +
-      '<button class="btn sm prev" onclick="previewKuitansi(' + arg(i) + ')">Preview Kuitansi</button>' +
-      '<button class="btn sm alt" onclick="unduhKuitansi(' + arg(i) + ')">Unduh</button>' +
-      '<button class="btn sm alt btn-batal" style="flex:1 1 100%" onclick="batalkanKuitansi(' + arg(i) + ')">Batalkan Kuitansi</button>' +
-      '</div></article>';
+      '<span class="rk-nominal">' + rp(i.total) + '</span></div></article>';
   }).join('');
   return '<section class="card rk"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
     '<label for="rPuk">Cari nama PUK</label>' +
@@ -166,6 +163,67 @@ function viewRiwayatKuitansi() {
     (baris || '<tr><td colspan="6">' + kosong + '</td></tr>') + '</table></div>' +
     '<div class="rk-kartu">' + (kartu || '<p class="hint">' + kosong + '</p>') + '</div></section>';
 }
+
+const IKON_TITIK = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+
+const MENU_KUITANSI = [
+  ['Lihat Pratinjau', 'previewKuitansi', ''],
+  ['Unduh PDF', 'unduhKuitansi', ''],
+  ['Unduh Foto', 'unduhFotoRiwayat', ''],
+  ['Batalkan Kuitansi', 'batalkanKuitansi', 'bahaya']
+];
+
+function tutupMenuKuitansi() {
+  const m = $('rkPop');
+  if (m) m.remove();
+  document.querySelectorAll('.rk-menu[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+}
+
+function bukaMenuKuitansi(e, pid, key) {
+  e.stopPropagation();
+  const tombol = e.currentTarget;
+  const lama = $('rkPop');
+  const sama = lama && lama.dataset.pid === pid && lama.dataset.key === key;
+  tutupMenuKuitansi();
+  if (sama) return;
+  const menu = document.createElement('div');
+  menu.id = 'rkPop';
+  menu.className = 'rk-pop';
+  menu.setAttribute('role', 'menu');
+  menu.dataset.pid = pid;
+  menu.dataset.key = key;
+  MENU_KUITANSI.forEach(([label, fn, gaya]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'menuitem');
+    b.className = 'rk-pop-item' + (gaya ? ' ' + gaya : '');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      tutupMenuKuitansi();
+      window[fn](pid, key);
+    });
+    menu.appendChild(b);
+  });
+  document.body.appendChild(menu);
+  tombol.setAttribute('aria-expanded', 'true');
+  const r = tombol.getBoundingClientRect();
+  const tinggi = menu.offsetHeight;
+  const bawah = r.bottom + 6 + tinggi > window.innerHeight - 12;
+  menu.style.top = Math.max(8, bawah ? r.top - 6 - tinggi : r.bottom + 6) + 'px';
+  menu.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  const pertama = menu.querySelector('button');
+  if (pertama) pertama.focus();
+}
+
+document.addEventListener('click', e => {
+  const m = $('rkPop');
+  if (m && !m.contains(e.target)) tutupMenuKuitansi();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') tutupMenuKuitansi();
+});
+window.addEventListener('resize', tutupMenuKuitansi);
+window.addEventListener('scroll', tutupMenuKuitansi, true);
 
 async function batalkanKuitansi(pid, key) {
   const i = (S.iuran[pid] || {})[key];
