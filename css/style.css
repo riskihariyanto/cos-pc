@@ -127,6 +127,15 @@ body:has(#loginView:not([hidden])) .pwa-bar{display:none}
 .lencana{display:inline-block;margin-left:8px;padding:3px 9px;border-radius:4px;font-size:14px;font-weight:800;letter-spacing:.04em;line-height:1.3;white-space:nowrap;vertical-align:middle}
 .lencana-lunas{background:#2ee66b;color:#06210f}
 .lencana-belum{background:#ff1f2d;color:#fff}
-.sb .sb-baris{padding:10px 0}
-.sb .sb-baris .info{flex:1;min-width:0}
-.sb .sb-baris .lencana{margin-left:0}
+.sb-judul{margin:4px 2px 12px;font-size:18px;color:var(--ink)}
+.sb-ringkas{display:flex;gap:12px;margin-bottom:16px}
+.sb-stat{flex:1 1 0;min-width:0;padding:14px 16px;border-radius:12px;display:flex;flex-direction:column;gap:2px}
+.sb-stat-label{font-size:15px;font-weight:700}
+.sb-stat-angka{font-size:38px;font-weight:800;line-height:1.1}
+.sb-stat-lunas{background:#e6f6ec;color:#14532d;border:1px solid #bfe5cd}
+.sb-stat-belum{background:#fdeaea;color:#9f1217;border:1px solid #f5c2c4}
+.sb-puk{display:flex;align-items:center;gap:12px;padding:14px;margin-bottom:12px;background:#fff;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,.05)}
+.sb-ikon{flex:0 0 auto;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#e8f0fa;color:var(--pri)}
+.sb-ikon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sb-nama{flex:1 1 auto;min-width:0;font-size:16px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.sb-puk .lencana{flex:0 0 auto;margin-left:0}
