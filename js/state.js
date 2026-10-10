@@ -11,7 +11,13 @@ const S = {
   refs: []
 };
 
-const isPC = () => S.profile && S.profile.role === 'pc';
+const RUTE_PENGATURAN = '#/super-admin-secret-settings';
+
+const isSuperAdmin = () => !!(S.profile && S.profile.role === 'superadmin');
+
+const isPC = () => !!(S.profile && (S.profile.role === 'pc' || S.profile.role === 'superadmin'));
+
+const pengaturanDibuka = () => isSuperAdmin() && location.hash === RUTE_PENGATURAN;
 
 function resetData() {
   S.profile = null;
