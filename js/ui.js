@@ -1,4 +1,5 @@
 const INPUT_RUPIAH = ['fTotal', 'pTarif'];
+const NOMOR_BANTUAN = '6281383179209';
 
 const GAYA_LANSIA = `
 :root{--mut:#1a1a1a;--line:#8c99ab;--warn:#7a4b00}
@@ -174,3 +175,21 @@ document.addEventListener('input', e => {
 });
 
 pasangGayaLansia();
+
+function pesanBantuan() {
+  const baris = ['Halo, saya mengalami kendala pada aplikasi Kuitansi COS.', ''];
+  if (S && S.profile) {
+    const pc = isPC();
+    const puk = !pc && S.puk ? S.puk[S.profile.pukId] : null;
+    baris.push('Pengguna: ' + (pc ? ((S.pengaturan && S.pengaturan.namaPC) || 'Pengurus Cabang') : (puk ? puk.namaPerusahaan : 'PUK')));
+    const tab = (pc ? TABS_PC : TABS_PUK).filter(t => t[0] === S.tab)[0];
+    if (tab) baris.push('Menu: ' + tab[1]);
+  }
+  baris.push('Kendala: ');
+  return baris.join('\n');
+}
+
+function bukaBantuanWA(el) {
+  el.href = 'https://wa.me/' + NOMOR_BANTUAN + '?text=' + encodeURIComponent(pesanBantuan());
+  return true;
+}
