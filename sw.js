@@ -1,4 +1,4 @@
-const VERSI = 'cos-v8';
+const VERSI = 'cos-v9';
 
 const SHELL = [
   './',
@@ -11,7 +11,6 @@ const SHELL = [
   './js/util.js',
   './js/state.js',
   './js/kuitansi.js',
-  './js/puk.js',
   './js/pc.js',
   './js/ui.js',
   './js/auth.js',
