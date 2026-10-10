@@ -8,7 +8,7 @@ header{position:static;padding:10px 14px}
 header b{font-size:18px}
 header small{font-size:14px;opacity:1}
 header button{min-height:44px;padding:8px 16px;font-size:16px;font-weight:700;background:#fff;color:var(--acc);border:3px solid var(--acc)}
-main{padding:12px 12px 130px}
+main{padding:12px 12px 160px}
 .card{padding:18px;border:1px solid var(--line);border-radius:14px}
 .card h2{font-size:23px}
 .card h3{font-size:21px}
@@ -53,17 +53,20 @@ th{font-size:15px;font-weight:700;color:var(--ink);text-transform:none;letter-sp
 `;
 
 const VIEWS = {
+  dasbor: viewDasbor,
   catat: viewCatat,
   kuitansi: viewRiwayatKuitansi,
   pengaturan: viewPengaturan
 };
 
 const IKON_NAV = {
-  catat: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  dasbor: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  catat: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   kuitansi: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'
 };
 
 const TABS_PC = [
+  ['dasbor', 'Status Pembayaran', 'Status'],
   ['catat', 'Buat Kuitansi', 'Catat'],
   ['kuitansi', 'Riwayat Kuitansi', 'Riwayat']
 ];
@@ -89,7 +92,8 @@ function render() {
 
   $('nav').innerHTML = tabs.map(t => {
     const aktif = t[0] === S.tab;
-    return '<button class="' + (aktif ? 'on' : '') + '" aria-label="' + esc(t[1]) + '"' + (aktif ? ' aria-current="page"' : '') + ' onclick="showTab(\'' + t[0] + '\')">' +
+    const kelas = (t[0] === 'catat' ? 'utama' : '') + (aktif ? ' on' : '');
+    return '<button class="' + kelas.trim() + '" aria-label="' + esc(t[1]) + '"' + (aktif ? ' aria-current="page"' : '') + ' onclick="showTab(\'' + t[0] + '\')">' +
       '<span class="nav-ikon"><svg viewBox="0 0 24 24" aria-hidden="true">' + IKON_NAV[t[0]] + '</svg></span>' +
       '<span class="nav-label">' + esc(t[2]) + '</span></button>';
   }).join('');
