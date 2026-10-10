@@ -1,4 +1,4 @@
-const INPUT_RUPIAH = ['fTotal', 'pTarif'];
+const INPUT_RUPIAH = ['fTotal'];
 const NOMOR_BANTUAN = '6281383179209';
 
 const GAYA_LANSIA = `
@@ -46,34 +46,22 @@ th{font-size:15px;font-weight:700;color:var(--ink);text-transform:none;letter-sp
 `;
 
 const VIEWS = {
-  setor: viewSetor,
-  riwayat: viewRiwayat,
-  anggota: viewAnggota,
   catat: viewCatat,
-  verifikasi: viewVerifikasi,
-  puk: viewPUK,
   kuitansi: viewRiwayatKuitansi,
   pengaturan: viewPengaturan
 };
 
 const IKON_NAV = {
   catat: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
-  verifikasi: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-  puk: '<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>',
   kuitansi: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
-  pengaturan: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
-  setor: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
-  riwayat: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+  pengaturan: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>'
 };
 
 const TABS_PC = [
-  ['catat', 'Catat Setoran Masuk', 'Catat'],
-  ['verifikasi', 'Verifikasi Setoran', 'Verifikasi'],
-  ['puk', 'Tambah PUK', 'Tambah PUK'],
+  ['catat', 'Buat Kuitansi', 'Catat'],
   ['kuitansi', 'Riwayat Kuitansi', 'Riwayat'],
   ['pengaturan', 'Pengaturan', 'Pengaturan']
 ];
-const TABS_PUK = [['setor', 'Setor COS', 'Setor'], ['riwayat', 'Riwayat', 'Riwayat']];
 
 function showTab(t) {
   S.tab = t;
@@ -86,20 +74,16 @@ function render() {
   $('loginView').hidden = true;
   $('appView').hidden = false;
 
-  const pc = isPC();
-  const tabs = pc ? TABS_PC : TABS_PUK;
+  const tabs = TABS_PC;
   if (!tabs.some(t => t[0] === S.tab)) S.tab = tabs[0][0];
 
-  const pukSendiri = pc ? null : S.puk[S.profile.pukId];
-  $('who').textContent = pc ? (S.pengaturan.namaPC || 'Pengurus Cabang') : (pukSendiri ? pukSendiri.namaPerusahaan : 'PUK');
-  $('role').textContent = pc ? 'Dashboard PC' : 'Dashboard PUK';
+  $('who').textContent = S.pengaturan.namaPC || 'Pengurus Cabang';
+  $('role').textContent = 'Dashboard PC';
 
-  const antre = pc ? allIuran().filter(x => x.status === 'Pending').length : 0;
   $('nav').innerHTML = tabs.map(t => {
-    const lencana = t[0] === 'verifikasi' && antre ? '<i class="nav-badge">' + antre + '</i>' : '';
     const aktif = t[0] === S.tab;
     return '<button class="' + (aktif ? 'on' : '') + '" aria-label="' + esc(t[1]) + '"' + (aktif ? ' aria-current="page"' : '') + ' onclick="showTab(\'' + t[0] + '\')">' +
-      '<span class="nav-ikon"><svg viewBox="0 0 24 24" aria-hidden="true">' + IKON_NAV[t[0]] + '</svg>' + lencana + '</span>' +
+      '<span class="nav-ikon"><svg viewBox="0 0 24 24" aria-hidden="true">' + IKON_NAV[t[0]] + '</svg></span>' +
       '<span class="nav-label">' + esc(t[2]) + '</span></button>';
   }).join('');
 
@@ -179,10 +163,8 @@ pasangGayaLansia();
 function pesanBantuan() {
   const baris = ['Halo, saya mengalami kendala pada aplikasi Kuitansi COS.', ''];
   if (S && S.profile) {
-    const pc = isPC();
-    const puk = !pc && S.puk ? S.puk[S.profile.pukId] : null;
-    baris.push('Pengguna: ' + (pc ? ((S.pengaturan && S.pengaturan.namaPC) || 'Pengurus Cabang') : (puk ? puk.namaPerusahaan : 'PUK')));
-    const tab = (pc ? TABS_PC : TABS_PUK).filter(t => t[0] === S.tab)[0];
+    baris.push('Pengguna: ' + ((S.pengaturan && S.pengaturan.namaPC) || 'Pengurus Cabang'));
+    const tab = TABS_PC.filter(t => t[0] === S.tab)[0];
     if (tab) baris.push('Menu: ' + tab[1]);
   }
   baris.push('Kendala: ');
