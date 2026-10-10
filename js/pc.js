@@ -284,4 +284,134 @@ function viewCatat() {
 async function catatSetoran() {
   const pil = $('fPukPilih').value;
   const dipilih = daftarPilihanPUK().filter(x => x.nilai === pil)[0];
-  const nama = pil === '__baru' ? bersihN
+  const nama = pil === '__baru' ? bersihNamaPUK($('fPuk') ? $('fPuk').value : '') : (dipilih ? dipilih.nama : '');
+  const metode = $('fMetode').value === 'Transfer' ? 'Transfer' : 'Tunai';
+  const bulan = +$('fBulan').value;
+  const tahun = +$('fTahun').value;
+  const tgl = $('fTanggal').value;
+  const total = angka($('fTotal').value);
+  if (!nama || !bulan || !tahun || !(total > 0) || !tgl) return toast('Isi nama PUK, total nominal, dan tanggal terima');
+
+  const key = periodeKey(tahun, bulan);
+  let pid = cariPUK(nama);
+  const ada = pid ? (S.iuran[pid] || {})[key] : null;
+  if (periodeKunci(ada)) return toast(pesanAdmin());
+  const namaTersimpan = pid ? S.puk[pid].namaPerusahaan : nama;
+
+  const ok = await jalankan(async () => {
+    if (!pid) {
+      pid = db.ref('puk').push().key;
+      await db.ref('puk/' + pid).set({ namaPerusahaan: nama });
+    }
+    const hariIni = new Date().toISOString().slice(0, 10);
+    const nomor = await nextNomor(namaTersimpan, bulan, tahun);
+    const data = {
+      periode: key,
+      total: total,
+      tanggalSetor: tgl,
+      status: 'Lunas',
+      metode: metode,
+      sumber: 'PC',
+      nomorKuitansi: nomor,
+      dibuat: firebase.database.ServerValue.TIMESTAMP,
+      diverifikasiOleh: S.profile.nama || '',
+      tanggalVerifikasi: hariIni,
+      tanggalCetak: hariIni
+    };
+    const berhasil = await klaimPeriode(pid, key, data);
+    if (!berhasil) throw new Error('Kuitansi untuk PUK dan bulan ini sudah diterbitkan');
+    if (ada) await db.ref('bukti/' + pid + '/' + key).remove().catch(() => {});
+    return true;
+  }, 'Kuitansi diterbitkan');
+  if (ok) {
+    S.tmp.pukNama = namaTersimpan;
+    render();
+  }
+}
+
+function exportCSV() {
+  const namaPUK = pid => (S.puk[pid] || {}).namaPerusahaan || '';
+  const data = daftarRiwayat()
+    .sort((x, y) => y.key.localeCompare(x.key) || namaPUK(x.pid).localeCompare(namaPUK(y.pid)));
+  if (!data.length) return toast('Tidak ada kuitansi untuk diekspor');
+  const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Tanggal Cetak', 'Metode', 'Total']];
+  data.forEach(x => rows.push([x.nomorKuitansi, namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, tglCetak(x), labelMetode(x.metode), x.total]));
+  const csv = rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'riwayat-kuitansi-cos.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function jumlahKuitansiPUK(pid) {
+  const per = S.iuran[pid] || {};
+  return Object.keys(per).filter(k => per[k].status === 'Lunas' && nomorTerbit(per[k])).length;
+}
+
+function viewPengaturan() {
+  if (!isSuperAdmin()) return '';
+  const c = S.pengaturan || {};
+  const img = k => S.tmp[k] || c[k] || '';
+  const pv = k => '<img class="pv" id="pv_' + k + '" src="' + img(k) + '"' + (img(k) ? '' : ' hidden') + '>';
+  return '<section class="card"><h3>Identitas PC & penandatangan kuitansi</h3>' +
+    '<label for="sNama">Nama Pengurus Cabang</label><input id="sNama" value="' + esc(c.namaPC) + '">' +
+    '<label for="sAlamat">Alamat</label><input id="sAlamat" value="' + esc(c.alamat) + '">' +
+    '<label for="sKota">Kota (untuk tanggal kuitansi)</label><input id="sKota" value="' + esc(c.kota) + '">' +
+    '<label for="sBendahara">Nama bendahara / ketua penandatangan</label><input id="sBendahara" value="' + esc(c.bendahara) + '">' +
+    '<label for="sJabatan">Jabatan penandatangan</label><input id="sJabatan" value="' + esc(c.jabatan || 'Bendahara') + '">' +
+    '<label for="fStempel">Gambar stempel (PNG transparan disarankan)</label><input id="fStempel" type="file" accept="image/*" onchange="muatGambar(this,\'stempel\')">' + pv('stempel') +
+    '<label for="fTtd">Gambar tanda tangan</label><input id="fTtd" type="file" accept="image/*" onchange="muatGambar(this,\'ttd\')">' + pv('ttd') +
+    '<button class="btn" onclick="simpanPengaturan()">Simpan</button>' +
+    '<button class="btn alt" onclick="keluarPengaturan()">Kembali ke Aplikasi</button></section>';
+}
+
+function muatGambar(inp, key) {
+  const f = inp.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, 400 / Math.max(im.width, im.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(im.width * k);
+      cv.height = Math.round(im.height * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      S.tmp[key] = cv.toDataURL('image/png');
+      const el = $('pv_' + key);
+      el.src = S.tmp[key];
+      el.hidden = false;
+    };
+    im.src = r.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function keluarPengaturan() {
+  history.replaceState(null, '', location.pathname + location.search);
+  S.tab = '';
+  render();
+}
+
+function simpanPengaturan() {
+  if (!isSuperAdmin()) return toast('Akses ditolak');
+  const c = S.pengaturan || {};
+  const data = {
+    namaPC: $('sNama').value.trim(),
+    alamat: $('sAlamat').value.trim(),
+    kota: $('sKota').value.trim(),
+    bendahara: $('sBendahara').value.trim(),
+    jabatan: $('sJabatan').value.trim() || 'Bendahara',
+    stempel: S.tmp.stempel || c.stempel || '',
+    ttd: S.tmp.ttd || c.ttd || ''
+  };
+  if (!data.namaPC) return toast('Nama Pengurus Cabang wajib diisi');
+  jalankan(async () => {
+    await db.ref('pengaturan').set(data);
+    S.tmp = {};
+  }, 'Pengaturan disimpan');
+}
