@@ -104,3 +104,10 @@ tr:nth-child(even) td{background:#f5f8fc}
 
 body:has(#appView:not([hidden])) .pwa-bar{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
 body:has(#appView:not([hidden])) #toast{bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+
+.fab-wa{position:fixed;right:14px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:12;display:flex;align-items:center;gap:8px;min-height:56px;padding:0 20px 0 16px;border-radius:999px;background:#1fa855;color:#fff;font-size:17px;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.3);-webkit-tap-highlight-color:transparent}
+.fab-wa:active{background:#168a44}
+.fab-wa svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+body:has(#appView:not([hidden])) .fab-wa{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+body:has(.pwa-bar) .fab-wa{bottom:calc(130px + env(safe-area-inset-bottom,0px))}
+body:has(#appView:not([hidden])):has(.pwa-bar) .fab-wa{bottom:calc(190px + env(safe-area-inset-bottom,0px))}
