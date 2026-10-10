@@ -87,9 +87,35 @@ function panelTerkunci(pid, key, i) {
   const arg = '\'' + pid + '\',\'' + key + '\'';
   return '<div class="row"><div class="info"><b>Kuitansi sudah terbit</b> <span class="badge b-Lunas">Lunas</span><br>' +
     '<span class="hint">' + rp(i.total) + ' · ' + esc(labelMetode(i.metode)) + ' · ' + esc(fmtTgl(i.tanggalSetor)) + '<br>' + esc(i.nomorKuitansi) + '</span></div>' +
-    '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(' + arg + ')">Preview Kuitansi</button>' +
-    '<button class="btn sm alt btn-batal" onclick="batalkanKuitansi(' + arg + ')">Batalkan Kuitansi</button></div></div>' +
-    '<p class="hint">Periode ' + esc(labelPeriode(key)) + ' sudah memiliki kuitansi. Jika ada salah ketik, batalkan lalu terbitkan ulang. Atau pilih bulan atau PUK lain.</p>';
+    '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(' + arg + ')">Preview Kuitansi</button></div></div>' +
+    '<p class="hint">Periode ' + esc(labelPeriode(key)) + ' sudah memiliki kuitansi dan bersifat permanen. Pilih bulan atau PUK lain untuk menerbitkan kuitansi baru.</p>';
+}
+
+function lencanaBayar(lunas) {
+  return lunas
+    ? '<span class="lencana lencana-lunas">LUNAS</span>'
+    : '<span class="lencana lencana-belum">BELUM BAYAR</span>';
+}
+
+function sudahBayarBulanIni(pid) {
+  const now = new Date();
+  const key = periodeKey(now.getFullYear(), now.getMonth() + 1);
+  return !!(pid && periodeKunci((S.iuran[pid] || {})[key]));
+}
+
+function panelStatusBayar() {
+  const now = new Date();
+  const daftar = daftarPilihanPUK().map(o => {
+    const pid = cariPUK(o.nama);
+    return { nama: o.nama, lunas: sudahBayarBulanIni(pid) };
+  }).sort((a, b) => (a.lunas - b.lunas) || a.nama.localeCompare(b.nama));
+  if (!daftar.length) return '';
+  const belum = daftar.filter(x => !x.lunas).length;
+  const baris = daftar.map(x =>
+    '<div class="row sb-baris"><div class="info"><b>PUK ' + esc(x.nama) + '</b></div>' + lencanaBayar(x.lunas) + '</div>').join('');
+  return '<section class="card sb"><h3>Status Bayar ' + esc(BULAN[now.getMonth()] + ' ' + now.getFullYear()) + '</h3>' +
+    '<p class="hint">' + (belum ? '<b>' + belum + ' PUK belum bayar</b> dari ' + daftar.length + ' PUK' : 'Semua PUK sudah bayar') + '</p>' +
+    baris + '</section>';
 }
 
 function tglCetak(i) {
@@ -131,26 +157,25 @@ function viewRiwayatKuitansi() {
   const kosong = aktif ? 'Tidak ada kuitansi yang cocok dengan pencarian.' : 'Belum ada kuitansi yang diterbitkan.';
   const baris = list.map(i => {
     const p = S.puk[i.pid] || {};
-    return '<tr><td>' + esc(p.namaPerusahaan || '-') + '<br><span class="hint">' + esc(i.nomorKuitansi) + '</span></td>' +
+    return '<tr><td>' + esc(p.namaPerusahaan || '-') + ' ' + lencanaBayar(true) + '<br><span class="hint">' + esc(i.nomorKuitansi) + '</span></td>' +
       '<td>' + esc(labelPeriode(i.key)) + '</td>' +
       '<td class="r">' + rp(i.total) + '</td>' +
       '<td>' + esc(labelMetode(i.metode) || '-') + '</td>' +
       '<td>' + esc(fmtTgl(tglCetak(i))) + '</td>' +
       '<td><button class="btn sm prev" onclick="previewKuitansi(' + arg(i) + ')">Preview Kuitansi</button> ' +
-      '<button class="btn sm alt" onclick="unduhKuitansi(' + arg(i) + ')">Unduh</button> ' +
-      '<button class="btn sm alt btn-batal" onclick="batalkanKuitansi(' + arg(i) + ')">Batalkan</button></td></tr>';
+      '<button class="btn sm alt" onclick="unduhKuitansi(' + arg(i) + ')">Unduh</button></td></tr>';
   }).join('');
   const kartu = list.map(i => {
     const p = S.puk[i.pid] || {};
     return '<article class="rk-item">' +
       '<div class="rk-kepala"><div class="rk-teks">' +
-      '<div class="rk-nama">' + esc(p.namaPerusahaan || '-') + '</div>' +
+      '<div class="rk-nama">' + esc(p.namaPerusahaan || '-') + ' ' + lencanaBayar(true) + '</div>' +
       '<div class="rk-nomor">' + esc(i.nomorKuitansi) + '</div></div>' +
       '<button type="button" class="rk-menu" aria-label="Opsi kuitansi" aria-haspopup="menu" onclick="bukaMenuKuitansi(event,' + arg(i) + ')">' + IKON_TITIK + '</button></div>' +
       '<div class="rk-info"><span class="rk-periode">' + esc(labelPeriode(i.key)) + '</span>' +
       '<span class="rk-nominal">' + rp(i.total) + '</span></div></article>';
   }).join('');
-  return '<section class="card rk"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
+  return panelStatusBayar() + '<section class="card rk"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
     '<label for="rPuk">Cari nama PUK</label>' +
     '<input id="rPuk" type="search" autocomplete="off" placeholder="Ketik nama PUK" value="' + esc(S.tmp.rPuk || '') + '" oninput="ubahFilterRiwayat()">' +
     '<label for="rPer">Periode</label>' +
@@ -169,8 +194,7 @@ const IKON_TITIK = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" 
 const MENU_KUITANSI = [
   ['Lihat Pratinjau', 'previewKuitansi', ''],
   ['Unduh PDF', 'unduhKuitansi', ''],
-  ['Unduh Foto', 'unduhFotoRiwayat', ''],
-  ['Batalkan Kuitansi', 'batalkanKuitansi', 'bahaya']
+  ['Unduh Foto', 'unduhFotoRiwayat', '']
 ];
 
 function tutupMenuKuitansi() {
@@ -225,16 +249,6 @@ document.addEventListener('keydown', e => {
 window.addEventListener('resize', tutupMenuKuitansi);
 window.addEventListener('scroll', tutupMenuKuitansi, true);
 
-async function batalkanKuitansi(pid, key) {
-  const i = (S.iuran[pid] || {})[key];
-  if (!i) return toast('Data kuitansi tidak ditemukan');
-  const nama = (S.puk[pid] || {}).namaPerusahaan || '';
-  const tanya = 'Batalkan kuitansi ' + i.nomorKuitansi + '?\n' + nama + ' · ' + labelPeriode(key) + ' · ' + rp(i.total) +
-    '\n\nKuitansi akan dihapus dan tidak bisa dikembalikan. Nomor ini tidak dipakai lagi.';
-  if (!window.confirm(tanya)) return;
-  await jalankan(() => db.ref('iuran/' + pid + '/' + key).remove(), 'Kuitansi dibatalkan');
-}
-
 function viewCatat() {
   const hari = new Date().toISOString().slice(0, 10);
   const nama = S.tmp.pukNama || '';
@@ -249,7 +263,7 @@ function viewCatat() {
     opsi.map(o => '<option value="' + esc(o.nilai) + '"' + (o.nilai === pilih ? ' selected' : '') + '>PUK ' + esc(o.nama) + '</option>').join('') +
     '<option value="__baru"' + (pilih === '__baru' ? ' selected' : '') + '>+ PUK baru (ketik nama sendiri)</option>';
   const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === b ? ' selected' : '') + '>' + n + '</option>').join('');
-  const kepala = '<section class="card"><h3>Buat Kuitansi Iuran</h3>' +
+  const kepala = panelStatusBayar() + '<section class="card"><h3>Buat Kuitansi Iuran</h3>' +
     '<label for="fPukPilih">Nama PUK</label>' +
     '<select id="fPukPilih" onchange="ubahPUKCatat()">' + optPuk + '</select>' +
     (pilih === '__baru' ? '<label for="fPuk">Nama PUK baru</label><input id="fPuk" autocomplete="off" placeholder="Ketik nama PUK, tanpa kata PUK" value="' + esc(nama) + '" onchange="ubahPUKCatat()">' : '') +
@@ -270,125 +284,4 @@ function viewCatat() {
 async function catatSetoran() {
   const pil = $('fPukPilih').value;
   const dipilih = daftarPilihanPUK().filter(x => x.nilai === pil)[0];
-  const nama = pil === '__baru' ? bersihNamaPUK($('fPuk') ? $('fPuk').value : '') : (dipilih ? dipilih.nama : '');
-  const metode = $('fMetode').value === 'Transfer' ? 'Transfer' : 'Tunai';
-  const bulan = +$('fBulan').value;
-  const tahun = +$('fTahun').value;
-  const tgl = $('fTanggal').value;
-  const total = angka($('fTotal').value);
-  if (!nama || !bulan || !tahun || !(total > 0) || !tgl) return toast('Isi nama PUK, total nominal, dan tanggal terima');
-
-  const key = periodeKey(tahun, bulan);
-  let pid = cariPUK(nama);
-  const ada = pid ? (S.iuran[pid] || {})[key] : null;
-  if (periodeKunci(ada)) return toast(pesanAdmin());
-  const namaTersimpan = pid ? S.puk[pid].namaPerusahaan : nama;
-
-  const ok = await jalankan(async () => {
-    if (!pid) {
-      pid = db.ref('puk').push().key;
-      await db.ref('puk/' + pid).set({ namaPerusahaan: nama });
-    }
-    const hariIni = new Date().toISOString().slice(0, 10);
-    const nomor = await nextNomor(namaTersimpan, bulan, tahun);
-    const data = {
-      periode: key,
-      total: total,
-      tanggalSetor: tgl,
-      status: 'Lunas',
-      metode: metode,
-      sumber: 'PC',
-      nomorKuitansi: nomor,
-      dibuat: firebase.database.ServerValue.TIMESTAMP,
-      diverifikasiOleh: S.profile.nama || '',
-      tanggalVerifikasi: hariIni,
-      tanggalCetak: hariIni
-    };
-    const berhasil = await klaimPeriode(pid, key, data);
-    if (!berhasil) throw new Error('Kuitansi untuk PUK dan bulan ini sudah diterbitkan');
-    if (ada) await db.ref('bukti/' + pid + '/' + key).remove().catch(() => {});
-    return true;
-  }, 'Kuitansi diterbitkan');
-  if (ok) {
-    S.tmp.pukNama = namaTersimpan;
-    render();
-  }
-}
-
-function exportCSV() {
-  const namaPUK = pid => (S.puk[pid] || {}).namaPerusahaan || '';
-  const data = daftarRiwayat()
-    .sort((x, y) => y.key.localeCompare(x.key) || namaPUK(x.pid).localeCompare(namaPUK(y.pid)));
-  if (!data.length) return toast('Tidak ada kuitansi untuk diekspor');
-  const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Tanggal Cetak', 'Metode', 'Total']];
-  data.forEach(x => rows.push([x.nomorKuitansi, namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, tglCetak(x), labelMetode(x.metode), x.total]));
-  const csv = rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
-  const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'riwayat-kuitansi-cos.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function jumlahKuitansiPUK(pid) {
-  const per = S.iuran[pid] || {};
-  return Object.keys(per).filter(k => per[k].status === 'Lunas' && nomorTerbit(per[k])).length;
-}
-
-function viewPengaturan() {
-  const c = S.pengaturan || {};
-  const img = k => S.tmp[k] || c[k] || '';
-  const pv = k => '<img class="pv" id="pv_' + k + '" src="' + img(k) + '"' + (img(k) ? '' : ' hidden') + '>';
-  return '<section class="card"><h3>Identitas PC & penandatangan kuitansi</h3>' +
-    '<label for="sNama">Nama Pengurus Cabang</label><input id="sNama" value="' + esc(c.namaPC) + '">' +
-    '<label for="sAlamat">Alamat</label><input id="sAlamat" value="' + esc(c.alamat) + '">' +
-    '<label for="sKota">Kota (untuk tanggal kuitansi)</label><input id="sKota" value="' + esc(c.kota) + '">' +
-    '<label for="sBendahara">Nama bendahara / ketua penandatangan</label><input id="sBendahara" value="' + esc(c.bendahara) + '">' +
-    '<label for="sJabatan">Jabatan penandatangan</label><input id="sJabatan" value="' + esc(c.jabatan || 'Bendahara') + '">' +
-    '<label for="fStempel">Gambar stempel (PNG transparan disarankan)</label><input id="fStempel" type="file" accept="image/*" onchange="muatGambar(this,\'stempel\')">' + pv('stempel') +
-    '<label for="fTtd">Gambar tanda tangan</label><input id="fTtd" type="file" accept="image/*" onchange="muatGambar(this,\'ttd\')">' + pv('ttd') +
-    '<button class="btn" onclick="simpanPengaturan()">Simpan</button></section>';
-}
-
-function muatGambar(inp, key) {
-  const f = inp.files[0];
-  if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    const im = new Image();
-    im.onload = () => {
-      const k = Math.min(1, 400 / Math.max(im.width, im.height));
-      const cv = document.createElement('canvas');
-      cv.width = Math.round(im.width * k);
-      cv.height = Math.round(im.height * k);
-      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
-      S.tmp[key] = cv.toDataURL('image/png');
-      const el = $('pv_' + key);
-      el.src = S.tmp[key];
-      el.hidden = false;
-    };
-    im.src = r.result;
-  };
-  r.readAsDataURL(f);
-}
-
-function simpanPengaturan() {
-  const c = S.pengaturan || {};
-  const data = {
-    namaPC: $('sNama').value.trim(),
-    alamat: $('sAlamat').value.trim(),
-    kota: $('sKota').value.trim(),
-    bendahara: $('sBendahara').value.trim(),
-    jabatan: $('sJabatan').value.trim() || 'Bendahara',
-    stempel: S.tmp.stempel || c.stempel || '',
-    ttd: S.tmp.ttd || c.ttd || ''
-  };
-  if (!data.namaPC) return toast('Nama Pengurus Cabang wajib diisi');
-  jalankan(async () => {
-    await db.ref('pengaturan').set(data);
-    S.tmp = {};
-  }, 'Pengaturan disimpan');
-}
+  const nama = pil === '__baru' ? bersihN
