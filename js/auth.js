@@ -14,7 +14,7 @@ auth.onAuthStateChanged(async user => {
       await auth.signOut();
       return;
     }
-    if (p.role !== 'pc') {
+    if (p.role !== 'pc' && p.role !== 'superadmin') {
       toast('Akun ini tidak memiliki akses. Hanya Admin PC yang dapat masuk.');
       await auth.signOut();
       return;
