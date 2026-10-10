@@ -2,7 +2,6 @@ const S = {
   profile: null,
   puk: {},
   iuran: {},
-  anggota: {},
   pengaturan: {},
   tab: '',
   lastTab: '',
@@ -18,7 +17,6 @@ function resetData() {
   S.profile = null;
   S.puk = {};
   S.iuran = {};
-  S.anggota = {};
   S.pengaturan = {};
 }
 
@@ -48,13 +46,6 @@ function listen(path, apply) {
 
 function attach() {
   listen('pengaturan', v => { S.pengaturan = v || {}; });
-  if (isPC()) {
-    listen('puk', v => { S.puk = v || {}; });
-    listen('iuran', v => { S.iuran = v || {}; });
-  } else {
-    const pid = S.profile.pukId;
-    listen('puk/' + pid, v => { S.puk = { [pid]: v || {} }; });
-    listen('iuran/' + pid, v => { S.iuran = { [pid]: v || {} }; });
-    listen('anggota/' + pid, v => { S.anggota = v || {}; });
-  }
+  listen('puk', v => { S.puk = v || {}; });
+  listen('iuran', v => { S.iuran = v || {}; });
 }
