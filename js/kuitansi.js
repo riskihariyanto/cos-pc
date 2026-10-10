@@ -5,6 +5,7 @@ const TINGGI_KERTAS = 592;
 
 let pvAktif = null;
 let pvFoto = null;
+let pvRiwayat = false;
 
 function buatQR(teks) {
   const q = qrcode(0, 'M');
@@ -332,7 +333,7 @@ function tombolEsc(e) {
 function previewKuitansi(pid, key) {
   const i = (S.iuran[pid] || {})[key];
   if (!i) return toast('Data kuitansi tidak ditemukan');
-  tutupPreview();
+  if ($('pvOv')) bersihPratinjau();
   pasangGayaPratinjau();
   let m;
   try {
@@ -361,6 +362,13 @@ function previewKuitansi(pid, key) {
   skalaKertas();
   window.addEventListener('resize', skalaKertas);
   document.addEventListener('keydown', tombolEsc);
+  try {
+    history.pushState({ pratinjau: true }, '');
+    pvRiwayat = true;
+  } catch (e) {
+    pvRiwayat = false;
+  }
+  window.addEventListener('popstate', tanganiKembali);
   const x = ov.querySelector('.pv-x');
   if (x) x.focus();
   setTimeout(() => {
@@ -370,14 +378,31 @@ function previewKuitansi(pid, key) {
   }, 200);
 }
 
-function tutupPreview() {
+function bersihPratinjau() {
   const ov = $('pvOv');
   if (ov) ov.remove();
   document.body.classList.remove('pv-buka');
   window.removeEventListener('resize', skalaKertas);
   document.removeEventListener('keydown', tombolEsc);
+  window.removeEventListener('popstate', tanganiKembali);
   pvAktif = null;
   pvFoto = null;
+  pvRiwayat = false;
+}
+
+function tanganiKembali() {
+  if ($('pvOv')) bersihPratinjau();
+}
+
+function tutupPreview() {
+  if (pvRiwayat && history.state && history.state.pratinjau) {
+    history.back();
+    setTimeout(() => {
+      if ($('pvOv')) bersihPratinjau();
+    }, 500);
+    return;
+  }
+  bersihPratinjau();
 }
 
 function buatFotoBlob() {
