@@ -58,21 +58,51 @@ function ubahPUKCatat() {
 }
 
 function panelTerkunci(pid, key, i) {
+  const arg = '\'' + pid + '\',\'' + key + '\'';
   return '<div class="row"><div class="info"><b>Kuitansi sudah terbit</b> <span class="badge b-Lunas">Lunas</span><br>' +
     '<span class="hint">' + rp(i.total) + ' · ' + esc(labelMetode(i.metode)) + ' · ' + esc(fmtTgl(i.tanggalSetor)) + '<br>' + esc(i.nomorKuitansi) + '</span></div>' +
-    '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(\'' + pid + '\',\'' + key + '\')">Preview Kuitansi</button></div></div>' +
-    '<p class="hint">Periode ' + esc(labelPeriode(key)) + ' sudah memiliki kuitansi. Pilih bulan atau PUK lain untuk membuat kuitansi baru.</p>';
+    '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(' + arg + ')">Preview Kuitansi</button>' +
+    '<button class="btn sm alt btn-batal" onclick="batalkanKuitansi(' + arg + ')">Batalkan Kuitansi</button></div></div>' +
+    '<p class="hint">Periode ' + esc(labelPeriode(key)) + ' sudah memiliki kuitansi. Jika ada salah ketik, batalkan lalu terbitkan ulang. Atau pilih bulan atau PUK lain.</p>';
 }
 
 function tglCetak(i) {
   return i.tanggalCetak || i.tanggalVerifikasi || i.tanggalSetor || '';
 }
 
-function viewRiwayatKuitansi() {
-  const list = allIuran()
+function daftarRiwayat() {
+  const q = normNama(S.tmp.rPuk);
+  const per = S.tmp.rPer || '';
+  return allIuran()
     .filter(i => i.status === 'Lunas' && nomorTerbit(i))
+    .filter(i => !q || normNama((S.puk[i.pid] || {}).namaPerusahaan).indexOf(q) !== -1)
+    .filter(i => !per || i.key === per)
     .sort((x, y) => tglCetak(y).localeCompare(tglCetak(x)) || (y.dibuat || 0) - (x.dibuat || 0));
+}
+
+function ubahFilterRiwayat() {
+  S.tmp.rPuk = $('rPuk').value;
+  S.tmp.rPer = $('rPer').value;
+  render();
+}
+
+function resetFilterRiwayat() {
+  S.tmp.rPuk = '';
+  S.tmp.rPer = '';
+  render();
+}
+
+function viewRiwayatKuitansi() {
+  const semua = allIuran().filter(i => i.status === 'Lunas' && nomorTerbit(i));
+  const periodeAda = semua.map(i => i.key).filter((k, n, a) => a.indexOf(k) === n).sort().reverse();
+  if (S.tmp.rPer && periodeAda.indexOf(S.tmp.rPer) === -1) S.tmp.rPer = '';
+  const list = daftarRiwayat();
+  const jumlah = list.reduce((a, i) => a + (Number(i.total) || 0), 0);
+  const aktif = !!(S.tmp.rPuk || S.tmp.rPer);
   const arg = i => '\'' + i.pid + '\',\'' + i.key + '\'';
+  const optPeriode = '<option value="">Semua periode</option>' + periodeAda.map(k =>
+    '<option value="' + esc(k) + '"' + (k === S.tmp.rPer ? ' selected' : '') + '>' + esc(labelPeriode(k)) + '</option>').join('');
+  const kosong = aktif ? 'Tidak ada kuitansi yang cocok dengan pencarian.' : 'Belum ada kuitansi yang diterbitkan.';
   const baris = list.map(i => {
     const p = S.puk[i.pid] || {};
     return '<tr><td>' + esc(p.namaPerusahaan || '-') + '<br><span class="hint">' + esc(i.nomorKuitansi) + '</span></td>' +
@@ -80,7 +110,9 @@ function viewRiwayatKuitansi() {
       '<td class="r">' + rp(i.total) + '</td>' +
       '<td>' + esc(labelMetode(i.metode) || '-') + '</td>' +
       '<td>' + esc(fmtTgl(tglCetak(i))) + '</td>' +
-      '<td><button class="btn sm prev" onclick="previewKuitansi(' + arg(i) + ')">Preview Kuitansi</button></td></tr>';
+      '<td><button class="btn sm prev" onclick="previewKuitansi(' + arg(i) + ')">Preview Kuitansi</button> ' +
+      '<button class="btn sm alt" onclick="unduhKuitansi(' + arg(i) + ')">Unduh</button> ' +
+      '<button class="btn sm alt btn-batal" onclick="batalkanKuitansi(' + arg(i) + ')">Batalkan</button></td></tr>';
   }).join('');
   const kartu = list.map(i => {
     const p = S.puk[i.pid] || {};
@@ -92,14 +124,31 @@ function viewRiwayatKuitansi() {
       '<div class="rk-aksi">' +
       '<button class="btn sm prev" onclick="previewKuitansi(' + arg(i) + ')">Preview Kuitansi</button>' +
       '<button class="btn sm alt" onclick="unduhKuitansi(' + arg(i) + ')">Unduh</button>' +
+      '<button class="btn sm alt btn-batal" style="flex:1 1 100%" onclick="batalkanKuitansi(' + arg(i) + ')">Batalkan Kuitansi</button>' +
       '</div></article>';
   }).join('');
   return '<section class="card rk"><h3>Riwayat Kuitansi (' + list.length + ')</h3>' +
+    '<label for="rPuk">Cari nama PUK</label>' +
+    '<input id="rPuk" type="search" autocomplete="off" placeholder="Ketik nama PUK" value="' + esc(S.tmp.rPuk || '') + '" oninput="ubahFilterRiwayat()">' +
+    '<label for="rPer">Periode</label>' +
+    '<select id="rPer" onchange="ubahFilterRiwayat()">' + optPeriode + '</select>' +
+    '<p class="hint"><b>Total setoran: ' + rp(jumlah) + '</b> dari ' + list.length + ' kuitansi' + (aktif ? ' (hasil pencarian)' : '') + '</p>' +
+    (aktif ? '<button class="btn alt" onclick="resetFilterRiwayat()">Tampilkan Semua</button>' : '') +
     '<button class="btn alt rk-csv" onclick="exportCSV()">Ekspor CSV</button>' +
     '<div class="tw rk-tabel"><table>' +
     '<tr><th>Nama PUK</th><th>Bulan/Tahun</th><th class="r">Nominal</th><th>Metode</th><th>Tanggal cetak</th><th>Aksi</th></tr>' +
-    (baris || '<tr><td colspan="6">Belum ada kuitansi yang diterbitkan.</td></tr>') + '</table></div>' +
-    '<div class="rk-kartu">' + (kartu || '<p class="hint">Belum ada kuitansi yang diterbitkan.</p>') + '</div></section>';
+    (baris || '<tr><td colspan="6">' + kosong + '</td></tr>') + '</table></div>' +
+    '<div class="rk-kartu">' + (kartu || '<p class="hint">' + kosong + '</p>') + '</div></section>';
+}
+
+async function batalkanKuitansi(pid, key) {
+  const i = (S.iuran[pid] || {})[key];
+  if (!i) return toast('Data kuitansi tidak ditemukan');
+  const nama = (S.puk[pid] || {}).namaPerusahaan || '';
+  const tanya = 'Batalkan kuitansi ' + i.nomorKuitansi + '?\n' + nama + ' · ' + labelPeriode(key) + ' · ' + rp(i.total) +
+    '\n\nKuitansi akan dihapus dan tidak bisa dikembalikan. Nomor ini tidak dipakai lagi.';
+  if (!window.confirm(tanya)) return;
+  await jalankan(() => db.ref('iuran/' + pid + '/' + key).remove(), 'Kuitansi dibatalkan');
 }
 
 function viewCatat() {
@@ -177,10 +226,9 @@ async function catatSetoran() {
 
 function exportCSV() {
   const namaPUK = pid => (S.puk[pid] || {}).namaPerusahaan || '';
-  const data = allIuran()
-    .filter(x => x.status === 'Lunas' && nomorTerbit(x))
+  const data = daftarRiwayat()
     .sort((x, y) => y.key.localeCompare(x.key) || namaPUK(x.pid).localeCompare(namaPUK(y.pid)));
-  if (!data.length) return toast('Belum ada kuitansi yang diterbitkan');
+  if (!data.length) return toast('Tidak ada kuitansi untuk diekspor');
   const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Tanggal Cetak', 'Metode', 'Total']];
   data.forEach(x => rows.push([x.nomorKuitansi, namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, tglCetak(x), labelMetode(x.metode), x.total]));
   const csv = rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
