@@ -1,6 +1,41 @@
-function pilihPUKCatat() {
-  S.tmp.pukPilih = $('fPuk').value;
-  render();
+const normNama = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+function nomorTerbit(i) {
+  return !!(i && i.nomorKuitansi && i.nomorKuitansi !== '-');
+}
+
+function periodeKunci(i) {
+  return !!(i && i.status === 'Lunas' && nomorTerbit(i));
+}
+
+function labelMetode(m) {
+  return m === 'Tunai' ? 'Cash' : m === 'Transfer' ? 'Transfer' : '';
+}
+
+function pesanAdmin() {
+  return 'Kuitansi untuk PUK dan bulan ini sudah diterbitkan';
+}
+
+function cariPUK(nama) {
+  const n = normNama(nama);
+  if (!n) return '';
+  return Object.keys(S.puk).filter(pid => normNama(S.puk[pid].namaPerusahaan) === n)[0] || '';
+}
+
+async function klaimPeriode(pid, key, data) {
+  const res = await db.ref('iuran/' + pid + '/' + key).transaction(cur => {
+    if (periodeKunci(cur)) return;
+    return data;
+  });
+  return res.committed;
+}
+
+async function nextNomor(namaPT, bulan, tahun) {
+  const res = await db.ref('counter/' + tahun).transaction(v => (v || 0) + 1);
+  if (!res.committed) throw new Error('Nomor kuitansi gagal dibuat');
+  const seq = String(res.snapshot.val()).padStart(3, '0');
+  const slug = String(namaPT || '').replace(/[^A-Za-z0-9]+/g, '');
+  return seq + '/COS/PUK-' + slug + '/' + ROMAWI[bulan - 1] + '/' + tahun;
 }
 
 function periodeCatat() {
@@ -17,14 +52,20 @@ function ubahPeriodeCatat() {
   render();
 }
 
-function tglCetak(i) {
-  return i.tanggalCetak || i.tanggalVerifikasi || i.tanggalSetor || '';
+function ubahPUKCatat() {
+  S.tmp.pukNama = $('fPuk').value.replace(/\s+/g, ' ').trim();
+  render();
 }
 
-function pesanAdmin(i) {
-  return i && i.status === 'Lunas'
-    ? 'Kuitansi untuk bulan ini sudah diterbitkan'
-    : 'Periode ini sudah diajukan dan menunggu ACC di menu Verifikasi Setoran';
+function panelTerkunci(pid, key, i) {
+  return '<div class="row"><div class="info"><b>Kuitansi sudah terbit</b> <span class="badge b-Lunas">Lunas</span><br>' +
+    '<span class="hint">' + rp(i.total) + ' · ' + esc(labelMetode(i.metode)) + ' · ' + esc(fmtTgl(i.tanggalSetor)) + '<br>' + esc(i.nomorKuitansi) + '</span></div>' +
+    '<div class="act"><button class="btn sm prev" onclick="previewKuitansi(\'' + pid + '\',\'' + key + '\')">Preview Kuitansi</button></div></div>' +
+    '<p class="hint">Periode ' + esc(labelPeriode(key)) + ' sudah memiliki kuitansi. Pilih bulan atau PUK lain untuk membuat kuitansi baru.</p>';
+}
+
+function tglCetak(i) {
+  return i.tanggalCetak || i.tanggalVerifikasi || i.tanggalSetor || '';
 }
 
 function viewRiwayatKuitansi() {
@@ -63,68 +104,53 @@ function viewRiwayatKuitansi() {
 
 function viewCatat() {
   const hari = new Date().toISOString().slice(0, 10);
-  const pilih = S.tmp.pukPilih || '';
-  const pp = S.puk[pilih];
+  const nama = S.tmp.pukNama || '';
+  const pid = cariPUK(nama);
   const { b, t } = periodeCatat();
   const key = periodeKey(t, b);
-  const ada = pilih ? (S.iuran[pilih] || {})[key] : null;
-  const harapan = pp ? (+pp.jumlahAnggota || 0) * (+pp.tarifPerAnggota || 0) : 0;
-  const optPUK = '<option value="">Pilih PUK</option>' + sortedPUK().map(pid => '<option value="' + pid + '"' + (pid === pilih ? ' selected' : '') + '>' + esc(S.puk[pid].namaPerusahaan) + '</option>').join('');
+  const ada = pid ? (S.iuran[pid] || {})[key] : null;
+  const daftar = sortedPUK().map(id => '<option value="' + esc(S.puk[id].namaPerusahaan) + '"></option>').join('');
   const optBulan = BULAN.map((n, i) => '<option value="' + (i + 1) + '"' + (i + 1 === b ? ' selected' : '') + '>' + n + '</option>').join('');
-  const kepala = '<section class="card"><h3>Catat Setoran Masuk</h3>' +
-    '<label for="fPuk">PUK</label><select id="fPuk" onchange="pilihPUKCatat()">' + optPUK + '</select>' +
+  const kepala = '<section class="card"><h3>Buat Kuitansi Iuran</h3>' +
+    '<label for="fPuk">Nama PUK</label>' +
+    '<input id="fPuk" list="dlPuk" autocomplete="off" placeholder="Ketik atau pilih nama PUK" value="' + esc(nama) + '" onchange="ubahPUKCatat()">' +
+    '<datalist id="dlPuk">' + daftar + '</datalist>' +
     '<label for="fBulan">Bulan</label><select id="fBulan" onchange="ubahPeriodeCatat()">' + optBulan + '</select>' +
     '<label for="fTahun">Tahun</label><input id="fTahun" type="number" value="' + t + '" onchange="ubahPeriodeCatat()">';
 
-  if (pilih && periodeKunci(ada)) {
-    return kepala + '<p class="peringatan">' + esc(pesanAdmin(ada)) + '</p>' + panelTerkunci(pilih, key, ada) + '</section>';
+  if (pid && periodeKunci(ada)) {
+    return kepala + '<p class="peringatan">' + esc(pesanAdmin()) + '</p>' + panelTerkunci(pid, key, ada) + '</section>';
   }
   return kepala +
     '<label for="fMetode">Metode</label><select id="fMetode"><option value="Tunai">Cash (Tunai)</option><option value="Transfer">Transfer</option></select>' +
-    '<label for="fTotal">Nominal (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="' + harapan + '">' +
+    '<label for="fTotal">Total Nominal Setoran (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="20000000">' +
     '<label for="fTanggal">Tanggal terima</label><input id="fTanggal" type="date" value="' + hari + '">' +
-    '<p class="hint">' + (pp ? 'Seharusnya ' + rp(harapan) + ' (' + (pp.jumlahAnggota || 0) + ' anggota × ' + rp(pp.tarifPerAnggota) + '). Nominal dikosongkan = nilai ini. ' : '') + 'Kuitansi langsung terbit dan muncul di akun PUK.</p>' +
-    '<button class="btn" onclick="catatSetoran()">Catat lunas & terbitkan kuitansi</button></section>';
-}
-
-function viewVerifikasi() {
-  const list = allIuran().filter(x => x.status === 'Pending').sort((x, y) => (x.dibuat || 0) - (y.dibuat || 0));
-  const rows = list.map(i => {
-    const p = S.puk[i.pid] || {};
-    const sel = i.selisih ? '<br><span class="hint" style="color:var(--warn)">Selisih ' + rp(i.selisih) + ' dari ' + i.jumlahAnggota + ' × ' + rp(i.tarifPerAnggota) + '</span>' : '';
-    const bukti = i.metode === 'Transfer' ? '<button class="btn sm alt" onclick="lihatBukti(\'' + i.pid + '\',\'' + i.key + '\')">Lihat bukti</button>' : '';
-    return '<div class="row"><div class="info"><b>' + esc(p.namaPerusahaan || '-') + '</b> · ' + esc(labelPeriode(i.key)) + '<br>' + badgeIuran(i) + '<br>' +
-      '<span class="hint">' + rp(i.total) + ' · tanggal ' + esc(fmtTgl(i.tanggalSetor)) + ' · ' + esc(labelMetode(i.metode)) + '</span>' + sel + '</div>' +
-      '<div class="act">' + bukti + '<button class="btn sm" onclick="verifikasiIuran(\'' + i.pid + '\',\'' + i.key + '\')">ACC / Verifikasi</button>' +
-      '<button class="btn sm bad" onclick="tolakIuran(\'' + i.pid + '\',\'' + i.key + '\')">Tolak</button></div></div>';
-  }).join('');
-  return '<section class="card"><h3>Verifikasi Setoran (' + list.length + ')</h3>' +
-    (rows || '<p class="hint">Tidak ada pengajuan setoran yang menunggu.</p>') + '</section>';
+    '<p class="hint">Kuitansi langsung terbit dan sah setelah disimpan.</p>' +
+    '<button class="btn" onclick="catatSetoran()">Terbitkan Kuitansi</button></section>';
 }
 
 async function catatSetoran() {
-  const pid = $('fPuk').value;
-  const p = S.puk[pid];
+  const nama = $('fPuk').value.replace(/\s+/g, ' ').trim();
   const metode = $('fMetode').value === 'Transfer' ? 'Transfer' : 'Tunai';
   const bulan = +$('fBulan').value;
   const tahun = +$('fTahun').value;
   const tgl = $('fTanggal').value;
-  const harapan = p ? (+p.jumlahAnggota || 0) * (+p.tarifPerAnggota || 0) : 0;
-  const total = angka($('fTotal').value) || harapan;
-  if (!p || !bulan || !tahun || !(total > 0) || !tgl) return toast('Pilih PUK dan lengkapi data setoran');
+  const total = angka($('fTotal').value);
+  if (!nama || !bulan || !tahun || !(total > 0) || !tgl) return toast('Isi nama PUK, total nominal, dan tanggal terima');
 
   const key = periodeKey(tahun, bulan);
-  const ada = (S.iuran[pid] || {})[key];
-  if (periodeKunci(ada)) return toast(pesanAdmin(ada));
-
-  if (total !== harapan) {
-    const lanjut = confirm('Nominal ' + rp(total) + ' tidak sama dengan ' + rp(harapan) + ' (' + p.jumlahAnggota + ' anggota × ' + rp(p.tarifPerAnggota) + '). Tetap catat?');
-    if (!lanjut) return;
-  }
+  let pid = cariPUK(nama);
+  const ada = pid ? (S.iuran[pid] || {})[key] : null;
+  if (periodeKunci(ada)) return toast(pesanAdmin());
+  const namaTersimpan = pid ? S.puk[pid].namaPerusahaan : nama;
 
   const ok = await jalankan(async () => {
+    if (!pid) {
+      pid = db.ref('puk').push().key;
+      await db.ref('puk/' + pid).set({ namaPerusahaan: nama });
+    }
     const hariIni = new Date().toISOString().slice(0, 10);
-    const nomor = await nextNomor(p.namaPerusahaan, bulan, tahun);
+    const nomor = await nextNomor(namaTersimpan, bulan, tahun);
     const data = {
       periode: key,
       total: total,
@@ -133,137 +159,20 @@ async function catatSetoran() {
       metode: metode,
       sumber: 'PC',
       nomorKuitansi: nomor,
-      jumlahAnggota: +p.jumlahAnggota || 0,
-      tarifPerAnggota: +p.tarifPerAnggota || 0,
-      selisih: total - harapan,
       dibuat: firebase.database.ServerValue.TIMESTAMP,
       diverifikasiOleh: S.profile.nama || '',
       tanggalVerifikasi: hariIni,
       tanggalCetak: hariIni
     };
     const berhasil = await klaimPeriode(pid, key, data);
-    if (!berhasil) throw new Error('Kuitansi untuk bulan ini sudah diterbitkan atau sedang diajukan');
-    if (ada) await db.ref('bukti/' + pid + '/' + key).remove();
+    if (!berhasil) throw new Error('Kuitansi untuk PUK dan bulan ini sudah diterbitkan');
+    if (ada) await db.ref('bukti/' + pid + '/' + key).remove().catch(() => {});
     return true;
-  }, 'Setoran dicatat, kuitansi terbit di akun PUK');
-  if (ok) $('fTotal').value = '';
-}
-
-async function verifikasiIuran(pid, key) {
-  const i = (S.iuran[pid] || {})[key];
-  const p = S.puk[pid];
-  if (!i || !p) return toast('Data setoran tidak ditemukan');
-  if (i.status !== 'Pending') return toast('Pengajuan ini sudah diproses');
-  if (!confirm('ACC pengajuan ' + p.namaPerusahaan + ' periode ' + labelPeriode(key) + ' dan terbitkan kuitansi?')) return;
-  await jalankan(async () => {
-    const [t, b] = key.split('-');
-    const hariIni = new Date().toISOString().slice(0, 10);
-    const nomor = nomorTerbit(i) ? i.nomorKuitansi : await nextNomor(p.namaPerusahaan, +b, +t);
-    const res = await db.ref('iuran/' + pid + '/' + key).transaction(cur => {
-      if (!cur || cur.status !== 'Pending') return;
-      return Object.assign({}, cur, {
-        status: 'Lunas',
-        nomorKuitansi: nomor,
-        diverifikasiOleh: S.profile.nama || '',
-        tanggalVerifikasi: hariIni,
-        tanggalCetak: hariIni
-      });
-    });
-    if (!res.committed) throw new Error('Pengajuan ini sudah diproses');
-  }, 'Pengajuan di-ACC, kuitansi terbit di akun PUK');
-}
-
-function tutupBukti() {
-  const o = $('buktiView');
-  if (o) o.remove();
-}
-
-async function lihatBukti(pid, key) {
-  const src = await jalankan(async () => {
-    const s = await db.ref('bukti/' + pid + '/' + key).once('value');
-    return s.val();
-  });
-  if (typeof src !== 'string' || src.indexOf('data:image/') !== 0) return toast('Bukti transfer tidak ditemukan');
-  tutupBukti();
-  const ov = document.createElement('div');
-  ov.id = 'buktiView';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;overflow:auto';
-  ov.onclick = tutupBukti;
-  const cap = document.createElement('div');
-  cap.textContent = 'Ketuk di mana saja untuk menutup';
-  cap.style.cssText = 'color:#fff;font-size:16px';
-  const im = document.createElement('img');
-  im.src = src;
-  im.alt = 'Bukti transfer';
-  im.style.cssText = 'max-width:100%;max-height:85%;background:#fff;border-radius:8px';
-  ov.appendChild(cap);
-  ov.appendChild(im);
-  document.body.appendChild(ov);
-}
-
-function tolakIuran(pid, key) {
-  if (!confirm('Tolak setoran ini? PUK dapat mengirim ulang.')) return;
-  jalankan(async () => {
-    const res = await db.ref('iuran/' + pid + '/' + key).transaction(cur => {
-      if (!cur || cur.status !== 'Pending') return;
-      return Object.assign({}, cur, { status: 'Ditolak' });
-    });
-    if (!res.committed) throw new Error('Pengajuan ini sudah diproses');
-  }, 'Setoran ditolak');
-}
-
-function viewPUK() {
-  const list = sortedPUK().map(pid => {
-    const p = S.puk[pid];
-    return '<div class="row"><div class="info"><b>' + esc(p.namaPerusahaan) + '</b><br><span class="hint">Ketua: ' + esc(p.namaKetua) + ' · ' + (p.jumlahAnggota || 0) + ' anggota × ' + rp(p.tarifPerAnggota) + '<br>' + esc((p.email || '').replace(DOMAIN_LOGIN, '')) + '</span></div>' +
-      '<div class="act"><button class="btn sm alt" onclick="editPUK(\'' + pid + '\')">Ubah anggota & tarif</button></div></div>';
-  }).join('');
-  return '<section class="card"><h3>Tambah PUK</h3>' +
-    '<label for="pNama">Nama perusahaan</label><input id="pNama">' +
-    '<label for="pKetua">Nama ketua PUK</label><input id="pKetua">' +
-    '<label for="pJumlah">Jumlah anggota</label><input id="pJumlah" type="number" inputmode="numeric">' +
-    '<label for="pTarif">Tarif iuran per anggota (Rp)</label><input id="pTarif" type="number" inputmode="numeric">' +
-    '<label for="pId">ID login PUK</label><input id="pId" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">' +
-    '<label for="pPass">Sandi awal (min. 6 karakter)</label><input id="pPass" type="text" autocomplete="off">' +
-    '<button class="btn" onclick="tambahPUK()">Tambah PUK</button></section>' +
-    '<section class="card"><h3>Daftar PUK (' + Object.keys(S.puk).length + ')</h3>' + (list || '<p class="hint">Belum ada PUK.</p>') + '</section>';
-}
-
-async function tambahPUK() {
-  const v = id => $(id).value.trim();
-  const nama = v('pNama'), ketua = v('pKetua'), jml = +v('pJumlah'), tarif = angka($('pTarif').value), idLogin = v('pId'), pass = $('pPass').value;
-  if (!nama || !ketua || !(jml > 0) || !(tarif > 0) || !idLogin || pass.length < 6) return toast('Lengkapi data, sandi minimal 6 karakter');
-  if (/\s/.test(idLogin)) return toast('ID login tidak boleh mengandung spasi');
-  const email = emailDariId(idLogin);
-
-  const ok = await jalankan(async () => {
-    const sec = firebase.initializeApp(firebaseConfig, 'sec' + Date.now());
-    try {
-      const cred = await sec.auth().createUserWithEmailAndPassword(email, pass);
-      const pid = db.ref('puk').push().key;
-      const up = {};
-      up['puk/' + pid] = { namaPerusahaan: nama, namaKetua: ketua, jumlahAnggota: jml, tarifPerAnggota: tarif, email: email };
-      up['users/' + cred.user.uid] = { role: 'puk', pukId: pid, nama: ketua, email: email };
-      await db.ref().update(up);
-      await sec.auth().signOut();
-    } finally {
-      await sec.delete().catch(() => {});
-    }
-    return true;
-  }, 'PUK ditambahkan');
-  if (ok) ['pNama', 'pKetua', 'pJumlah', 'pTarif', 'pId', 'pPass'].forEach(id => { $(id).value = ''; });
-}
-
-function editPUK(pid) {
-  const p = S.puk[pid];
-  if (!p) return;
-  const j = prompt('Jumlah anggota aktif', p.jumlahAnggota);
-  if (j === null) return;
-  const t = prompt('Tarif per anggota (Rp)', ribuan(p.tarifPerAnggota));
-  if (t === null) return;
-  const tarif = angka(t);
-  if (!(+j > 0) || !(tarif > 0)) return toast('Nilai tidak valid');
-  jalankan(() => db.ref('puk/' + pid).update({ jumlahAnggota: +j, tarifPerAnggota: tarif }), 'Data PUK diperbarui');
+  }, 'Kuitansi diterbitkan');
+  if (ok) {
+    S.tmp.pukNama = namaTersimpan;
+    render();
+  }
 }
 
 function exportCSV() {
@@ -272,8 +181,8 @@ function exportCSV() {
     .filter(x => x.status === 'Lunas' && nomorTerbit(x))
     .sort((x, y) => y.key.localeCompare(x.key) || namaPUK(x.pid).localeCompare(namaPUK(y.pid)));
   if (!data.length) return toast('Belum ada kuitansi yang diterbitkan');
-  const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Tanggal Cetak', 'Metode', 'Anggota', 'Total']];
-  data.forEach(x => rows.push([x.nomorKuitansi, namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, tglCetak(x), labelMetode(x.metode), x.jumlahAnggota, x.total]));
+  const rows = [['Nomor Kuitansi', 'PUK', 'Periode', 'Tanggal Setor', 'Tanggal Cetak', 'Metode', 'Total']];
+  data.forEach(x => rows.push([x.nomorKuitansi, namaPUK(x.pid), labelPeriode(x.key), x.tanggalSetor, tglCetak(x), labelMetode(x.metode), x.total]));
   const csv = rows.map(r => r.map(c => '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
   const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
