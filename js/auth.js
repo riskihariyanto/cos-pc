@@ -14,6 +14,11 @@ auth.onAuthStateChanged(async user => {
       await auth.signOut();
       return;
     }
+    if (p.role !== 'pc') {
+      toast('Akun ini tidak memiliki akses. Hanya Admin PC yang dapat masuk.');
+      await auth.signOut();
+      return;
+    }
     S.profile = p;
     S.tab = '';
     attach();
