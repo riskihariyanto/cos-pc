@@ -37,16 +37,6 @@ th{font-size:15px;font-weight:700;color:var(--ink);text-transform:none;letter-sp
 .bar>div{min-width:100%}
 #busy{font-size:22px;background:rgba(255,255,255,.88)}
 #toast{bottom:32px;max-width:92%;padding:16px 20px;font-size:18px;background:#1a1a1a}
-.lencana{display:inline-block;margin-left:8px;padding:3px 9px;border-radius:4px;font-size:14px;font-weight:800;letter-spacing:.04em;line-height:1.3;white-space:nowrap;vertical-align:middle}
-.lencana-lunas{background:#2ee66b;color:#06210f}
-.lencana-belum{background:#ff1f2d;color:#fff}
-.sb{padding:10px 14px}
-.sb h3{margin:0 0 2px;font-size:19px}
-.sb .sb-baris{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:10px;padding:8px 0}
-.sb .sb-baris b{font-size:17px;font-weight:600}
-.sb .sb-baris .info{flex:1;min-width:0}
-.sb .sb-baris .lencana{flex:none;margin-left:10px}
-.rk .rk-nama .lencana{margin-left:6px;font-size:12px}
 @media (min-width:720px){
   .btn{width:auto;padding:14px 28px}
   .row .info{min-width:220px}
@@ -185,7 +175,7 @@ function pasangKetukRahasia() {
     if (jumlah < 3) return;
     clearTimeout(timer);
     jumlah = 0;
-    if (isSuperAdmin()) location.hash = RUTE_PENGATURAN;
+    if (isPC()) location.hash = RUTE_PENGATURAN;
   });
 }
 
