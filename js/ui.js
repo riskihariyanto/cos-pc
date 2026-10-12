@@ -12,11 +12,6 @@ main{padding:12px 12px 160px}
 .card{padding:18px;border:1px solid var(--line);border-radius:14px}
 .card h2{font-size:23px}
 .card h3{font-size:21px}
-label{font-size:18px;font-weight:700;color:var(--ink);margin:18px 0 6px}
-input,select,textarea{min-height:58px;padding:12px 14px;font-size:20px;border:2px solid #3d3d3d;border-radius:10px}
-textarea{min-height:150px}
-input[data-rupiah]{font-size:28px;font-weight:700;letter-spacing:.02em}
-input:focus,select:focus,textarea:focus,button:focus-visible{outline:4px solid #1a1a1a;outline-offset:2px;box-shadow:0 0 0 7px #fdb913}
 .btn{width:100%;min-height:60px;padding:14px 18px;margin-top:20px;font-size:20px;border-radius:12px}
 .btn.alt{border-width:2px}
 .btn.sm{width:auto;flex:1 1 44%;min-height:54px;margin:0;padding:12px 14px;font-size:18px}
