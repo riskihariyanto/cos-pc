@@ -17,7 +17,7 @@ const isSuperAdmin = () => !!(S.profile && S.profile.role === 'superadmin');
 
 const isPC = () => !!(S.profile && (S.profile.role === 'pc' || S.profile.role === 'superadmin'));
 
-const pengaturanDibuka = () => isSuperAdmin() && location.hash === RUTE_PENGATURAN;
+const pengaturanDibuka = () => isPC() && location.hash === RUTE_PENGATURAN;
 
 function resetData() {
   S.profile = null;
