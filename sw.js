@@ -1,4 +1,4 @@
-const VERSI = 'cos-v18';
+const VERSI = 'cos-v19';
 
 const SHELL = [
   './',
