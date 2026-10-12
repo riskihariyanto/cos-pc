@@ -191,3 +191,13 @@ input:focus,select:focus,textarea:focus{outline:3px solid #cfe5ff;border-color:#
 .btn{border-radius:11px}
 @media(min-width:700px){main{padding:26px 24px 140px}.dashboard-welcome{align-items:center}.summary-grid{gap:14px}.summary-card{padding:18px 20px}.summary-card strong{font-size:34px}.sb .sb-baris{padding:15px 4px}.sb .sb-baris b{font-size:14px}.sb .sb-baris .info small{font-size:11px}.lencana{font-size:10px;padding:7px 11px}}
 @media(max-width:380px){main{padding:14px 11px 140px}.dashboard-welcome{display:block}.periode-pill{display:inline-flex;margin-top:10px}.summary-grid{gap:7px}.summary-card{padding:11px 9px;border-radius:14px}.summary-icon{width:27px;height:27px;margin-bottom:8px}.summary-label{font-size:10px}.summary-card strong{font-size:25px}.summary-card small{font-size:9px}.sb-list{padding:0 11px}.sb .sb-baris{gap:8px}.sb-avatar{width:31px;height:31px;border-radius:10px}.sb .sb-baris b{font-size:12px}.sb .sb-baris .info small{font-size:9px}.lencana{max-width:92px;padding:6px 7px;font-size:8px}}
+html,body{-webkit-text-size-adjust:100%;-moz-text-size-adjust:100%;text-size-adjust:100%;max-width:100%;overflow-x:hidden}
+html{touch-action:manipulation}
+main,.card,.rk-item,.summary-grid,.sb{min-width:0;max-width:100%}
+.rk-judul,.rk-item,.rk-wa{width:100%;max-width:640px;margin-left:auto;margin-right:auto}
+.rk-aksi{grid-template-columns:repeat(3,minmax(0,1fr))}
+.rk-aksi button,.btn,.btn-pasang{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.row .act{min-width:0;max-width:100%}
+.bar>div{min-width:0}
+.pwa-bar{max-width:560px}
+.pwa-bar{margin-left:auto;margin-right:auto}
