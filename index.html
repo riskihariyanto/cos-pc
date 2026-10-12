@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kuitansi COS">
-<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
 <div id="loginView" hidden>
@@ -34,16 +34,11 @@
 <div id="appView" hidden>
   <header>
     <div><b id="who"></b><small id="role"></small></div>
-    <button onclick="doLogout()">Keluar</button>
+    <div class="hdr-aksi"><a id="btnBantuan" class="bantuan-ikon" href="https://wa.me/6281383179209" target="_blank" rel="noopener" onclick="return bukaBantuanWA(this)" aria-label="Bantuan lewat WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.4a2.6 2.6 0 0 1 5 1c0 1.7-2.5 2.2-2.5 3.9"/><circle cx="12" cy="17.4" r=".6"/></svg></a><button onclick="doLogout()">Keluar</button></div>
   </header>
   <nav id="nav" aria-label="Menu utama"></nav>
   <main id="content" aria-live="polite"></main>
 </div>
-
-<a id="fabWA" class="fab-wa" href="https://wa.me/6281383179209" target="_blank" rel="noopener" onclick="return bukaBantuanWA(this)" aria-label="Hubungi bantuan lewat WhatsApp">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.7-5.2A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 8.5c0 3.3 2.7 6 6 6l1.3-1.6-2-1-.9.8a4 4 0 0 1-1.7-1.7l.8-.9-1-2z"/></svg>
-  <span>Bantuan</span>
-</a>
 
 <div id="busy" hidden role="status">Memproses...</div>
 <div id="toast" hidden role="alert"></div>
@@ -60,7 +55,7 @@
 <script src="js/state.js?v=17"></script>
 <script src="js/kuitansi.js?v=15"></script>
 <script src="js/pc.js?v=17"></script>
-<script src="js/ui.js?v=17"></script>
+<script src="js/ui.js?v=18"></script>
 <script src="js/auth.js?v=15"></script>
 <script src="js/pwa.js?v=15"></script>
 <script>
