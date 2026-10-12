@@ -243,7 +243,7 @@ function jumlahKuitansiPUK(pid) {
 }
 
 function viewPengaturan() {
-  if (!isSuperAdmin()) return '';
+  if (!isPC()) return '';
   const c = S.pengaturan || {};
   const img = k => S.tmp[k] || c[k] || '';
   const pv = k => '<img class="pv" id="pv_' + k + '" src="' + img(k) + '"' + (img(k) ? '' : ' hidden') + '>';
@@ -288,7 +288,7 @@ function keluarPengaturan() {
 }
 
 function simpanPengaturan() {
-  if (!isSuperAdmin()) return toast('Akses ditolak');
+  if (!isPC()) return toast('Akses ditolak');
   const c = S.pengaturan || {};
   const data = {
     namaPC: $('sNama').value.trim(),
