@@ -133,3 +133,61 @@ body:has(#loginView:not([hidden])) .pwa-bar{display:none}
 .sb .sb-baris{padding:8px 0}
 .sb .sb-baris .info{flex:1;min-width:0}
 .sb .sb-baris .lencana{margin-left:0}
+
+
+/* ===== Dashboard refresh: modern, clean, mobile-first ===== */
+:root{--bg:#f3f6fb;--card:#fff;--ink:#17263b;--mut:#64748b;--line:#e2e8f0;--pri:#0756a3;--pri2:#063e78;--acc:#dc2626;--gold:#f4b942;--ok:#168653;--bad:#dc2626}
+body{background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+header{background:linear-gradient(120deg,#064b91,#0967b8);border-bottom:3px solid #f4b942;padding:15px 18px;box-shadow:0 4px 18px rgba(7,47,88,.12)}
+header b{font-size:clamp(14px,3.6vw,18px);letter-spacing:.01em;line-height:1.35}
+header small{display:block;margin-top:4px;font-size:13px;color:#dbeafe;opacity:1}
+header button{border:1px solid rgba(255,255,255,.72);border-radius:12px;padding:9px 15px;box-shadow:0 2px 5px rgba(0,0,0,.08)}
+main{max-width:1080px;padding:18px 16px 145px}
+.dashboard-welcome{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:4px 1px 18px}
+.dashboard-welcome .eyebrow{display:block;color:#0b65ad;font-size:10px;font-weight:800;letter-spacing:.12em;margin-bottom:5px}
+.dashboard-welcome h2{font-size:clamp(21px,5vw,28px);line-height:1.2;letter-spacing:-.035em;margin:0;color:#142b45}
+.dashboard-welcome p{font-size:13px;color:#64748b;margin:7px 0 0;max-width:440px}
+.periode-pill{flex:none;padding:7px 10px;border:1px solid #cfe2f7;border-radius:999px;background:#eaf4ff;color:#0756a3;font-size:11px;font-weight:800;white-space:nowrap}
+.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.summary-card{position:relative;min-width:0;padding:14px 12px 13px;border:1px solid #e4eaf2;border-radius:17px;background:#fff;box-shadow:0 5px 18px rgba(20,50,80,.045);overflow:hidden}
+.summary-card:after{content:"";position:absolute;right:-19px;top:-22px;width:68px;height:68px;border-radius:50%;background:currentColor;opacity:.055}
+.summary-icon{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;background:#eaf3ff;color:#0756a3;font-size:19px;font-weight:800;margin-bottom:11px}
+.summary-label{display:block;color:#64748b;font-size:11px;font-weight:650;line-height:1.3}
+.summary-card strong{display:block;margin-top:3px;font-size:29px;line-height:1.15;letter-spacing:-.04em;color:#17263b}
+.summary-card small{display:block;margin-top:5px;color:#8190a3;font-size:10px;line-height:1.3}
+.summary-card.paid .summary-icon{background:#e5f7ed;color:#168653}
+.summary-card.unpaid .summary-icon{background:#fff0ee;color:#dc2626}
+.card{border:1px solid #e3e9f1;border-radius:18px;padding:16px;background:#fff;box-shadow:0 5px 20px rgba(20,50,80,.045);margin-bottom:15px}
+.sb{padding:0;overflow:hidden}
+.section-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:17px 16px 13px;border-bottom:1px solid #edf1f6}
+.section-heading h3{font-size:17px;line-height:1.3;margin:0;color:#172b43}
+.section-heading p{margin:4px 0 0;color:#7a899b;font-size:12px}
+.count-pill{background:#f0f5fb;color:#4c6178;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;white-space:nowrap}
+.sb-list{padding:0 15px}
+.sb .sb-baris{display:flex;align-items:center;flex-wrap:nowrap;gap:11px;padding:14px 0;border-top:1px solid #edf1f6;margin:0}
+.sb .sb-baris:first-child{border-top:0}
+.sb-avatar{display:flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px;border-radius:12px;background:#f0f5fb;color:#49647f;font-size:19px;font-weight:800}
+.sb-baris:has(.lencana-lunas) .sb-avatar{background:#e5f7ed;color:#168653}
+.sb .sb-baris .info{flex:1;min-width:0}
+.sb .sb-baris b{display:block;font-size:13.5px;line-height:1.35;font-weight:750;overflow-wrap:anywhere;color:#1c2d42}
+.sb .sb-baris .info small{display:block;margin-top:3px;font-size:10.5px;line-height:1.3;color:#8190a3}
+.lencana{margin-left:0;padding:6px 9px;border-radius:8px;font-size:9px;letter-spacing:.025em;line-height:1.2;text-align:center}
+.lencana-lunas{background:#e4f7ec;color:#167447}
+.lencana-belum{background:#fff0f0;color:#c62828}
+nav{max-width:600px;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:6px;border:1px solid #dce5ef;border-radius:22px;box-shadow:0 12px 32px rgba(17,40,67,.16)}
+nav button{min-height:60px;border-radius:15px;color:#6b7889;font-size:10px}
+nav button.on{background:#0756a3;color:#fff}
+nav button.utama{flex-basis:82px;color:#0756a3}
+nav button.utama .nav-ikon{width:66px;height:66px;margin-top:-30px;border:4px solid #fff;background:linear-gradient(145deg,#1478d4,#064b91);box-shadow:0 6px 18px rgba(7,86,163,.28)}
+nav button.utama.on .nav-ikon{box-shadow:0 0 0 3px #d8eaff,0 6px 18px rgba(7,86,163,.28)}
+nav button.utama svg{width:31px;height:31px}
+.fab-wa{right:15px;bottom:calc(155px + env(safe-area-inset-bottom,0px));min-height:48px;padding:0 16px 0 13px;border-radius:16px;background:#168b52;font-size:13px;box-shadow:0 8px 22px rgba(13,105,62,.24)}
+.fab-wa svg{width:22px;height:22px}
+body:has(#appView:not([hidden])) .fab-wa{bottom:calc(155px + env(safe-area-inset-bottom,0px))}
+body:has(.pwa-bar) .fab-wa{bottom:calc(155px + env(safe-area-inset-bottom,0px))}
+body:has(#appView:not([hidden])):has(.pwa-bar) .fab-wa{bottom:calc(255px + env(safe-area-inset-bottom,0px))}
+input,select,textarea{border-color:#d6e0eb;border-radius:11px;padding:12px 13px}
+input:focus,select:focus,textarea:focus{outline:3px solid #cfe5ff;border-color:#3988cf}
+.btn{border-radius:11px}
+@media(min-width:700px){main{padding:26px 24px 140px}.dashboard-welcome{align-items:center}.summary-grid{gap:14px}.summary-card{padding:18px 20px}.summary-card strong{font-size:34px}.sb .sb-baris{padding:15px 4px}.sb .sb-baris b{font-size:14px}.sb .sb-baris .info small{font-size:11px}.lencana{font-size:10px;padding:7px 11px}}
+@media(max-width:380px){main{padding:14px 11px 140px}.dashboard-welcome{display:block}.periode-pill{display:inline-flex;margin-top:10px}.summary-grid{gap:7px}.summary-card{padding:11px 9px;border-radius:14px}.summary-icon{width:27px;height:27px;margin-bottom:8px}.summary-label{font-size:10px}.summary-card strong{font-size:25px}.summary-card small{font-size:9px}.sb-list{padding:0 11px}.sb .sb-baris{gap:8px}.sb-avatar{width:31px;height:31px;border-radius:10px}.sb .sb-baris b{font-size:12px}.sb .sb-baris .info small{font-size:9px}.lencana{max-width:92px;padding:6px 7px;font-size:8px}}
