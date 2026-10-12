@@ -42,11 +42,18 @@ async function nextNomor(namaPT, bulan, tahun) {
   return seq + '/COS/PUK-' + slug + '/' + ROMAWI[bulan - 1] + '/' + tahun;
 }
 
+function periodeDefault(tgl) {
+  const now = tgl || new Date();
+  const bulanIni = now.getMonth() + 1;
+  if (bulanIni === 1) return { b: 12, t: now.getFullYear() - 1 };
+  return { b: bulanIni - 1, t: now.getFullYear() };
+}
+
 function periodeCatat() {
-  const now = new Date();
+  const d = periodeDefault();
   return {
-    b: S.tmp.catatBulan || now.getMonth() + 1,
-    t: S.tmp.catatTahun || now.getFullYear()
+    b: S.tmp.catatBulan || d.b,
+    t: S.tmp.catatTahun || d.t
   };
 }
 
@@ -98,13 +105,13 @@ function lencanaBayar(lunas) {
 }
 
 function sudahBayarBulanIni(pid) {
-  const now = new Date();
-  const key = periodeKey(now.getFullYear(), now.getMonth() + 1);
+  const d = periodeDefault();
+  const key = periodeKey(d.t, d.b);
   return !!(pid && periodeKunci((S.iuran[pid] || {})[key]));
 }
 
 function panelStatusBayar() {
-  const now = new Date();
+  const per = periodeDefault();
   const daftar = daftarPilihanPUK().map(o => {
     const pid = cariPUK(o.nama);
     return { nama: o.nama, lunas: sudahBayarBulanIni(pid) };
@@ -116,7 +123,7 @@ function panelStatusBayar() {
     const inisial = String(x.nama || '').replace(/^puk\s+/i, '').trim().charAt(0).toUpperCase() || '?';
     return '<div class="puk-kartu"><div class="puk-avatar" aria-hidden="true">' + esc(inisial) + '</div><b class="puk-nama">PUK ' + esc(x.nama) + '</b>' + lencanaBayar(x.lunas) + '</div>';
   }).join('');
-  return '<section class="dashboard-welcome"><div><span class="eyebrow">DASHBOARD PENGURUS CABANG</span><h2>Ringkasan Pembayaran</h2><p>Pantau status setoran iuran setiap PUK dalam satu tampilan.</p></div><div class="periode-pill">' + esc(BULAN[now.getMonth()] + ' ' + now.getFullYear()) + '</div></section>' +
+  return '<section class="dashboard-welcome"><div><span class="eyebrow">DASHBOARD PENGURUS CABANG</span><h2>Ringkasan Pembayaran</h2><p>Pantau status setoran iuran setiap PUK dalam satu tampilan.</p></div><div class="periode-pill">' + esc(BULAN[per.b - 1] + ' ' + per.t) + '</div></section>' +
     '<section class="summary-grid"><div class="summary-card total"><span class="summary-icon">▦</span><span class="summary-label">Total PUK</span><strong>' + daftar.length + '</strong><small>Terdaftar</small></div>' +
     '<div class="summary-card paid"><span class="summary-icon">✓</span><span class="summary-label">Sudah Bayar</span><strong>' + lunas + '</strong><small>PUK lunas</small></div>' +
     '<div class="summary-card unpaid"><span class="summary-icon">◷</span><span class="summary-label">Belum Bayar</span><strong>' + belum + '</strong><small>Perlu ditindaklanjuti</small></div></section>' +
