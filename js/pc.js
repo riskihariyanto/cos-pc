@@ -112,13 +112,15 @@ function panelStatusBayar() {
   if (!daftar.length) return '';
   const lunas = daftar.filter(x => x.lunas).length;
   const belum = daftar.length - lunas;
-  const baris = daftar.map(x =>
-    '<div class="row sb-baris"><div class="sb-avatar" aria-hidden="true">' + (x.lunas ? '✓' : '•') + '</div><div class="info"><b>PUK ' + esc(x.nama) + '</b><small>' + (x.lunas ? 'Pembayaran sudah diterima' : 'Menunggu pembayaran iuran') + '</small></div>' + lencanaBayar(x.lunas) + '</div>').join('');
+  const baris = daftar.map(x => {
+    const inisial = String(x.nama || '').replace(/^puk\s+/i, '').trim().charAt(0).toUpperCase() || '?';
+    return '<div class="puk-kartu"><div class="puk-avatar" aria-hidden="true">' + esc(inisial) + '</div><b class="puk-nama">PUK ' + esc(x.nama) + '</b>' + lencanaBayar(x.lunas) + '</div>';
+  }).join('');
   return '<section class="dashboard-welcome"><div><span class="eyebrow">DASHBOARD PENGURUS CABANG</span><h2>Ringkasan Pembayaran</h2><p>Pantau status setoran iuran setiap PUK dalam satu tampilan.</p></div><div class="periode-pill">' + esc(BULAN[now.getMonth()] + ' ' + now.getFullYear()) + '</div></section>' +
     '<section class="summary-grid"><div class="summary-card total"><span class="summary-icon">▦</span><span class="summary-label">Total PUK</span><strong>' + daftar.length + '</strong><small>Terdaftar</small></div>' +
     '<div class="summary-card paid"><span class="summary-icon">✓</span><span class="summary-label">Sudah Bayar</span><strong>' + lunas + '</strong><small>PUK lunas</small></div>' +
     '<div class="summary-card unpaid"><span class="summary-icon">◷</span><span class="summary-label">Belum Bayar</span><strong>' + belum + '</strong><small>Perlu ditindaklanjuti</small></div></section>' +
-    '<section class="card sb"><div class="section-heading"><div><h3>Status Bayar</h3><p>Rincian pembayaran iuran per PUK</p></div><span class="count-pill">' + daftar.length + ' PUK</span></div><div class="sb-list">' + baris + '</div></section>';
+    '<section class="puk-bagian"><div class="section-heading"><div><h3>Status Bayar</h3><p>Rincian pembayaran iuran per PUK</p></div><span class="count-pill">' + daftar.length + ' PUK</span></div><div class="puk-list">' + baris + '</div></section>';
 }
 
 function viewDasbor() {
