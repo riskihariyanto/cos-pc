@@ -9,7 +9,7 @@ let kasList = [];
 let kasIds = {};
 let subCatat = 'kuitansi';
 let subRiwayat = 'kuitansi';
-let draftKas = { jenis: 'masuk', nominal: '', ket: '' };
+let draftKas = { jenis: 'masuk', tgl: '', nominal: '', ket: '' };
 let sedangSinkron = false;
 let pengenalSuara = null;
 
@@ -119,6 +119,8 @@ function sinkronKas() {
 function simpanDraftKas() {
   const n = $('kNominal');
   const k = $('kKet');
+  const t = $('kTgl');
+  if (t) draftKas.tgl = t.value;
   if (n) draftKas.nominal = n.value;
   if (k) draftKas.ket = k.value;
 }
@@ -165,10 +167,17 @@ function simpanKas() {
     if ($('kKet')) $('kKet').focus();
     return;
   }
+  const hariIni = hariIniLokal();
+  const tgl = /^\d{4}-\d{2}-\d{2}$/.test(draftKas.tgl) ? draftKas.tgl : hariIni;
+  if (tgl > hariIni) {
+    toast('Tanggal tidak boleh melewati hari ini');
+    if ($('kTgl')) $('kTgl').focus();
+    return;
+  }
   hentikanSuara();
   const item = {
     id: db.ref('kas').push().key,
-    tgl: hariIniLokal(),
+    tgl,
     jenis,
     nominal,
     ket,
@@ -176,7 +185,7 @@ function simpanKas() {
     dibuat: Date.now()
   };
   simpanJson(KUNCI_ANTRIAN_KAS, antrianKas().concat([item]));
-  draftKas = { jenis, nominal: '', ket: '' };
+  draftKas = { jenis, tgl: '', nominal: '', ket: '' };
   hitungTotal();
   render();
   if (!navigator.onLine) {
@@ -266,6 +275,8 @@ function viewKasForm() {
     '<div class="kas-jenis" role="group" aria-label="Jenis Transaksi">' +
     '<button type="button" class="keluar' + (draftKas.jenis === 'keluar' ? ' on' : '') + '" aria-pressed="' + (draftKas.jenis === 'keluar') + '" onclick="pilihJenisKas(\'keluar\')">Kas Keluar</button>' +
     '<button type="button" class="masuk' + (draftKas.jenis !== 'keluar' ? ' on' : '') + '" aria-pressed="' + (draftKas.jenis !== 'keluar') + '" onclick="pilihJenisKas(\'masuk\')">Kas Masuk</button></div>' +
+    '<label for="kTgl">Tanggal transaksi</label>' +
+    '<input id="kTgl" type="date" max="' + hariIniLokal() + '" value="' + esc(draftKas.tgl || hariIniLokal()) + '">' +
     '<label for="kNominal">Nominal (Rp)</label>' +
     '<input id="kNominal" placeholder="0" value="' + esc(draftKas.nominal) + '">' +
     '<label for="kKet">Keterangan</label>' +
