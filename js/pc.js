@@ -237,10 +237,18 @@ async function catatSetoran() {
     if (!berhasil) throw new Error('Kuitansi untuk PUK dan bulan ini sudah diterbitkan');
     if (ada) await db.ref('bukti/' + pid + '/' + key).remove().catch(() => {});
     return true;
-  }, 'Kuitansi diterbitkan');
+  });
   if (ok) {
-    S.tmp.pukNama = namaTersimpan;
+    S.tmp.pukNama = '';
+    S.tmp.pukBaru = false;
+    S.lastTab = null;
     render();
+    animasiSukses({
+      judul: 'Kuitansi Diterbitkan',
+      nominal: total,
+      detail: 'PUK ' + namaTersimpan + ' · ' + labelPeriode(key),
+      aksi: { label: 'Lihat Kuitansi', fn: () => previewKuitansi(pid, key) }
+    });
   }
 }
 
