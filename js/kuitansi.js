@@ -136,7 +136,7 @@ function susunKuitansi(d, pid, key) {
     jabatan: c.jabatan || 'Bendahara',
     bendahara,
     lebarNama,
-    stempel: hitungGambar(d, c.stempel, 140, 100, 26, 22, 'kanan'),
+    stempel: hitungGambar(d, c.stempel, 124, 100, 26, 22, 'kanan'),
     ttd: hitungGambar(d, c.ttd, 146, 100, 32, 22, 'tengah')
   };
 }
