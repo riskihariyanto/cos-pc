@@ -91,13 +91,17 @@ function akhirBulan(key) {
   return key + '-' + String(new Date(t, b, 0).getDate()).padStart(2, '0');
 }
 
+function tglTandaTangan(c) {
+  return [c.kota, fmtTgl(hariIniLokal())].filter(Boolean).join(', ');
+}
+
 function tandaTanganLaporan(d, y, key, c) {
   const kolom = [
     { x: 45, jabatan: 'Ketua', nama: c.ketua || '' },
     { x: 105, jabatan: 'Sekretaris', nama: c.sekretaris || '' },
     { x: 165, jabatan: 'Bendahara', nama: c.bendahara || '' }
   ];
-  const tglTtd = [c.kota, fmtTgl(akhirBulan(key))].filter(Boolean).join(', ');
+  const tglTtd = tglTandaTangan(c);
   const yJabatan = y + 5.5;
   const yNama = yJabatan + 30;
 
@@ -182,7 +186,7 @@ function buatLaporanPDF(d, key) {
     }
   });
 
-  let y = d.lastAutoTable.finalY + 12;
+  let y = d.lastAutoTable.finalY + 22;
   if (y + 46 > 297 - 15) {
     d.addPage();
     y = 25;
@@ -241,7 +245,7 @@ const GAYA_LAPORAN = `
 .lap-tabel td.t{white-space:nowrap}
 .lap-tabel td.a{text-align:right;white-space:nowrap}
 .lap-tabel tfoot td{background:#eef3f9;font-weight:700}
-.lap-ttd{display:grid;grid-template-columns:1fr 1fr 1fr;row-gap:4px;margin-top:40px;font-size:13px;text-align:center}
+.lap-ttd{display:grid;grid-template-columns:1fr 1fr 1fr;row-gap:6px;margin-top:72px;font-size:13px;text-align:center}
 .lap-ttd .span2{grid-column:1/3}
 .lap-gbr{position:relative;height:100px}
 .lap-gbr img{position:absolute;bottom:4px;height:83px;object-fit:contain}
@@ -261,7 +265,7 @@ function pasangGayaLaporan() {
 function htmlLaporan(key) {
   const c = S.pengaturan || {};
   const r = rekapBulan(entriLaporan(), key);
-  const tglTtd = [c.kota, fmtTgl(akhirBulan(key))].filter(Boolean).join(', ');
+  const tglTtd = tglTandaTangan(c);
   const baris = r.baris.map(x =>
     '<tr><td class="t">' + esc(tglPendek(x.tgl)) + '</td><td>' + esc(x.ket) + '</td>' +
     '<td class="a">' + esc(kolomLaporan(x.masuk)) + '</td><td class="a">' + esc(kolomLaporan(x.keluar)) + '</td>' +
@@ -521,9 +525,9 @@ function lembarBulan(entri, key, c) {
   br++;
   selGabung(ws, br, 0, 3, 'Saldo Akhir Bulan Ini', g.jumlahTeks);
   sel(ws, br, 4, r.akhir, g.jumlahAngka);
-  br += 2;
+  br += 3;
   selGabung(ws, br, 0, 1, 'Mengetahui,', g.ttd);
-  selGabung(ws, br, 3, 4, [c.kota, fmtTgl(akhirBulan(key))].filter(Boolean).join(', '), g.ttd);
+  selGabung(ws, br, 3, 4, tglTandaTangan(c), g.ttd);
   br++;
   selGabung(ws, br, 0, 1, 'Ketua', g.ttd);
   selGabung(ws, br, 2, 3, 'Sekretaris', g.ttd);
