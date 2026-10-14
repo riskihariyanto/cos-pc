@@ -10,6 +10,7 @@ let kasIds = {};
 let subCatat = 'kuitansi';
 let subRiwayat = 'kuitansi';
 let draftKas = { jenis: 'masuk', tgl: '', nominal: '', ket: '' };
+let kasTerakhir = null;
 let sedangSinkron = false;
 let pengenalSuara = null;
 
@@ -111,7 +112,16 @@ function sinkronKas() {
     hitungTotal();
     render();
     if (ditolak) toast('Belum bisa disimpan: aturan database belum mengizinkan kas. Data tetap aman di HP.');
-    else if (terkirim) toast(terkirim === 1 ? 'Transaksi kas tersimpan' : terkirim + ' transaksi kas tersinkron');
+    else if (terkirim && kasTerakhir) {
+      const k = kasTerakhir;
+      kasTerakhir = null;
+      animasiSukses({
+        judul: 'Transaksi Tersimpan',
+        nominal: k.nominal,
+        jenis: k.jenis,
+        detail: (k.jenis === 'keluar' ? 'Kas Keluar' : 'Kas Masuk') + ' · ' + k.ket
+      });
+    } else if (terkirim) toast(terkirim === 1 ? 'Transaksi kas tersimpan' : terkirim + ' transaksi kas tersinkron');
     if (terkirim && antrianKas().length) return sinkronKas();
   });
 }
@@ -186,7 +196,9 @@ function simpanKas() {
   };
   simpanJson(KUNCI_ANTRIAN_KAS, antrianKas().concat([item]));
   draftKas = { jenis, tgl: '', nominal: '', ket: '' };
+  kasTerakhir = { jenis, nominal, ket };
   hitungTotal();
+  S.lastTab = null;
   render();
   if (!navigator.onLine) {
     toast('Offline · transaksi disimpan di HP dan disinkron otomatis');
