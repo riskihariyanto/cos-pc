@@ -6,6 +6,10 @@ const TINGGI_KERTAS = 592;
 let pvAktif = null;
 let pvFoto = null;
 let pvRiwayat = false;
+let zoomBersih = null;
+
+const ZOOM_MIN = 1;
+const ZOOM_MAKS = 4;
 
 function buatQR(teks) {
   const q = qrcode(0, 'M');
@@ -327,6 +331,8 @@ const GAYA_PRATINJAU = `
 .pv-x{min-height:48px;padding:8px 20px;font:inherit;font-size:17px;font-weight:700;background:#fff;color:var(--acc);border:3px solid var(--acc);border-radius:10px;cursor:pointer}
 .pv-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}
 .pv-wrap{position:relative;flex:none;box-shadow:0 10px 36px rgba(0,0,0,.5)}
+.pv-stage.zoom{overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+.pv-stage.zoom .pv-wrap{transform-origin:50% 50%;transition:transform .1s ease-out;will-change:transform}
 .kertas{position:absolute;left:0;top:0;width:840px;height:592px;background:#fff;overflow:hidden;transform-origin:0 0;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a}
 .kertas .kt{position:absolute;white-space:nowrap;line-height:1.15;margin:0}
 .kertas .kb{position:absolute;display:block;box-sizing:border-box}
@@ -367,6 +373,77 @@ function tombolEsc(e) {
   if (e.key === 'Escape') tutupPreview();
 }
 
+function pasangZoomPratinjau(stage, wrap) {
+  const st = { z: 1, x: 0, y: 0 };
+  let awal = null;
+
+  const pusat = () => {
+    const r = stage.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
+
+  const terapkan = () => {
+    st.z = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, st.z));
+    const mx = Math.max(0, (wrap.offsetWidth * st.z - stage.clientWidth) / 2);
+    const my = Math.max(0, (wrap.offsetHeight * st.z - stage.clientHeight) / 2);
+    st.x = Math.min(mx, Math.max(-mx, st.x));
+    st.y = Math.min(my, Math.max(-my, st.y));
+    wrap.style.transform = 'translate(' + st.x.toFixed(1) + 'px,' + st.y.toFixed(1) + 'px) scale(' + st.z.toFixed(3) + ')';
+  };
+
+  const titikTengah = t => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+
+  const mulai = e => {
+    const t = e.touches;
+    if (t.length >= 2) {
+      const m = titikTengah(t);
+      const c = pusat();
+      awal = {
+        mode: 'cubit',
+        jarak: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) || 1,
+        z: st.z,
+        qx: (m.x - c.x - st.x) / st.z,
+        qy: (m.y - c.y - st.y) / st.z
+      };
+    } else if (t.length === 1 && st.z > 1) {
+      awal = { mode: 'geser', px: t[0].clientX, py: t[0].clientY, x: st.x, y: st.y };
+    } else {
+      awal = null;
+    }
+  };
+
+  const gerak = e => {
+    if (!awal) return;
+    const t = e.touches;
+    if (awal.mode === 'cubit' && t.length >= 2) {
+      e.preventDefault();
+      const jarak = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      const m = titikTengah(t);
+      const c = pusat();
+      st.z = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, awal.z * jarak / awal.jarak));
+      st.x = m.x - c.x - awal.qx * st.z;
+      st.y = m.y - c.y - awal.qy * st.z;
+      terapkan();
+    } else if (awal.mode === 'geser' && t.length === 1) {
+      e.preventDefault();
+      st.x = awal.x + t[0].clientX - awal.px;
+      st.y = awal.y + t[0].clientY - awal.py;
+      terapkan();
+    }
+  };
+
+  const opsi = { passive: false };
+  stage.addEventListener('touchstart', mulai, opsi);
+  stage.addEventListener('touchmove', gerak, opsi);
+  stage.addEventListener('touchend', mulai, opsi);
+  stage.addEventListener('touchcancel', mulai, opsi);
+  window.addEventListener('resize', terapkan);
+
+  zoomBersih = () => {
+    window.removeEventListener('resize', terapkan);
+  };
+}
+
 function previewKuitansi(pid, key) {
   if (!dataKuitansi(pid, key)) return toast('Data kuitansi tidak ditemukan');
   if ($('pvOv')) bersihPratinjau();
@@ -386,7 +463,7 @@ function previewKuitansi(pid, key) {
   ov.setAttribute('aria-label', 'Pratinjau kuitansi');
   ov.innerHTML =
     '<div class="pv-bar"><b>Pratinjau Kuitansi</b><button type="button" class="pv-x" onclick="tutupPreview()">Tutup</button></div>' +
-    '<div class="pv-stage" id="pvStage"><div class="pv-wrap" id="pvWrap">' + htmlKertas(m) + '</div></div>' +
+    '<div class="pv-stage zoom" id="pvStage"><div class="pv-wrap" id="pvWrap">' + htmlKertas(m) + '</div></div>' +
     '<div class="pv-act">' +
     '<button type="button" class="pv-wa" onclick="bagikanWAPratinjau(this)">' + IKON_WA + '<span>WhatsApp (Foto)</span></button>' +
     '<button type="button" class="pv-pdf" onclick="unduhPDFPratinjau()">Unduh PDF</button>' +
@@ -395,6 +472,7 @@ function previewKuitansi(pid, key) {
   document.body.appendChild(ov);
   document.body.classList.add('pv-buka');
   skalaKertas();
+  pasangZoomPratinjau($('pvStage'), $('pvWrap'));
   window.addEventListener('resize', skalaKertas);
   document.addEventListener('keydown', tombolEsc);
   try {
@@ -420,6 +498,10 @@ function bersihPratinjau() {
   window.removeEventListener('resize', skalaKertas);
   document.removeEventListener('keydown', tombolEsc);
   window.removeEventListener('popstate', tanganiKembali);
+  if (zoomBersih) {
+    zoomBersih();
+    zoomBersih = null;
+  }
   pvAktif = null;
   pvFoto = null;
   pvRiwayat = false;
