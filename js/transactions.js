@@ -297,6 +297,7 @@ function barisRiwayatKas() {
 }
 
 const GAYA_DAFTAR_KAS = `
+.sub-tab button{padding:8px 4px;font-size:13.5px;white-space:nowrap}
 .kas-judul{margin:0 0 2px}
 .kas-sub{margin:0 0 6px;font-size:14px}
 .riw-daftar{margin:0;padding:0;list-style:none}
@@ -354,8 +355,14 @@ VIEWS.dasbor = () => kartuSaldo() + viewDasborAsli();
 VIEWS.catat = () => sakelarSub(subCatat, 'pilihSubCatat', [['kuitansi', 'Kuitansi Iuran'], ['kas', 'Kas Masuk/Keluar']]) +
   (subCatat === 'kas' ? viewKasForm() : viewCatatAsli());
 
-VIEWS.kuitansi = () => sakelarSub(subRiwayat, 'pilihSubRiwayat', [['kuitansi', 'Kuitansi Iuran'], ['kas', 'Kas Digital']]) +
-  (subRiwayat === 'kas' ? viewKasRiwayat() : viewRiwayatAsli());
+function isiSubRiwayat() {
+  if (subRiwayat === 'kas') return viewKasRiwayat();
+  if (subRiwayat === 'laporan') return '';
+  return viewRiwayatAsli();
+}
+
+VIEWS.kuitansi = () => sakelarSub(subRiwayat, 'pilihSubRiwayat', [['kuitansi', 'Kuitansi Iuran'], ['kas', 'Riwayat Kas'], ['laporan', 'Laporan']]) +
+  isiSubRiwayat();
 
 INPUT_RUPIAH.push('kNominal');
 
