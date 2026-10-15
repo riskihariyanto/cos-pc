@@ -229,7 +229,8 @@ function cetakLaporanPDF() {
 const LEBAR_LAPORAN = 794;
 
 const GAYA_LAPORAN = `
-.pv-stage.lap{align-items:flex-start}
+.pv-stage.lap{align-items:flex-start;overflow:hidden;touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
+.pv-stage.lap .pv-wrap{transform-origin:0 0}
 .lap-kertas{position:absolute;left:0;top:0;width:794px;box-sizing:border-box;padding:57px;background:#fff;color:#1a1a1a;font-family:Helvetica,Arial,sans-serif;transform-origin:0 0}
 .lap-kop{text-align:center}
 .lap-kop b{display:block;font-size:20px;font-weight:700}
@@ -289,7 +290,14 @@ function htmlLaporan(key) {
     nama(c.ketua) + nama(c.sekretaris) + nama(c.bendahara) + '</div></div>';
 }
 
+const LAP_ZOOM_MIN = 1;
+const LAP_ZOOM_MAKS = 4;
+const LAP_ZOOM_KETUK = 2.5;
+const LAP_PINGGIR = 12;
+
 let lapRiwayat = false;
+let lapZoomAtur = null;
+let lapZoomHapus = null;
 
 function skalaLaporan() {
   const st = $('lapStage');
@@ -300,6 +308,219 @@ function skalaLaporan() {
   w.style.width = (LEBAR_LAPORAN * s).toFixed(1) + 'px';
   w.style.height = (k.offsetHeight * s).toFixed(1) + 'px';
   k.style.transform = 'scale(' + s.toFixed(4) + ')';
+  if (lapZoomAtur) lapZoomAtur();
+}
+
+function pasangZoomLaporan(stage, wrap) {
+  const st = { z: 1, x: 0, y: 0 };
+  let dasarX = 0;
+  let dasarY = 0;
+  let awal = null;
+  let ketukAkhir = null;
+  let anim = 0;
+
+  const batasZoom = z => Math.min(LAP_ZOOM_MAKS, Math.max(LAP_ZOOM_MIN, z));
+  const jarak = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) || 1;
+  const tengah = t => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+
+  const hentikan = () => {
+    if (anim) cancelAnimationFrame(anim);
+    anim = 0;
+  };
+
+  const terapkan = () => {
+    const r = stage.getBoundingClientRect();
+    const lebar = wrap.offsetWidth * st.z;
+    const tinggi = wrap.offsetHeight * st.z;
+    const vw = stage.clientWidth;
+    const vh = stage.clientHeight;
+    let kiri = dasarX + st.x;
+    let atas = dasarY + st.y;
+    if (lebar + LAP_PINGGIR * 2 <= vw) kiri = r.left + (vw - lebar) / 2;
+    else kiri = Math.min(r.left + LAP_PINGGIR, Math.max(r.left + vw - lebar - LAP_PINGGIR, kiri));
+    if (tinggi + LAP_PINGGIR * 2 <= vh) atas = r.top + LAP_PINGGIR;
+    else atas = Math.min(r.top + LAP_PINGGIR, Math.max(r.top + vh - tinggi - LAP_PINGGIR, atas));
+    st.x = kiri - dasarX;
+    st.y = atas - dasarY;
+    wrap.style.transform = 'translate(' + st.x.toFixed(2) + 'px,' + st.y.toFixed(2) + 'px) scale(' + st.z.toFixed(4) + ')';
+  };
+
+  const ukurDasar = () => {
+    st.z = 1;
+    st.x = 0;
+    st.y = 0;
+    wrap.style.transform = '';
+    const r = wrap.getBoundingClientRect();
+    dasarX = r.left;
+    dasarY = r.top;
+  };
+
+  const atur = () => {
+    hentikan();
+    awal = null;
+    ukurDasar();
+  };
+
+  const zoomKe = (z, cx, cy) => {
+    const baru = batasZoom(z);
+    const qx = (cx - dasarX - st.x) / st.z;
+    const qy = (cy - dasarY - st.y) / st.z;
+    st.z = baru;
+    st.x = cx - qx * baru - dasarX;
+    st.y = cy - qy * baru - dasarY;
+    terapkan();
+  };
+
+  const animasiZoom = (target, cx, cy) => {
+    hentikan();
+    const dari = st.z;
+    const t0 = performance.now();
+    const langkah = now => {
+      const p = Math.min(1, (now - t0) / 180);
+      zoomKe(dari + (target - dari) * (1 - Math.pow(1 - p, 3)), cx, cy);
+      anim = p < 1 ? requestAnimationFrame(langkah) : 0;
+    };
+    anim = requestAnimationFrame(langkah);
+  };
+
+  const luncur = (vx, vy) => {
+    hentikan();
+    let akhir = performance.now();
+    const langkah = now => {
+      const dt = Math.min(now - akhir, 50);
+      akhir = now;
+      const redam = Math.exp(-dt / 325);
+      vx *= redam;
+      vy *= redam;
+      const tx = st.x + vx * dt;
+      const ty = st.y + vy * dt;
+      st.x = tx;
+      st.y = ty;
+      terapkan();
+      if (Math.abs(st.x - tx) > 0.5) vx = 0;
+      if (Math.abs(st.y - ty) > 0.5) vy = 0;
+      anim = Math.abs(vx) + Math.abs(vy) > 0.02 ? requestAnimationFrame(langkah) : 0;
+    };
+    anim = requestAnimationFrame(langkah);
+  };
+
+  const mulai = e => {
+    hentikan();
+    const t = e.touches;
+    if (t.length >= 2) {
+      const m = tengah(t);
+      ketukAkhir = null;
+      awal = {
+        mode: 'cubit',
+        jarak: jarak(t),
+        z: st.z,
+        qx: (m.x - dasarX - st.x) / st.z,
+        qy: (m.y - dasarY - st.y) / st.z
+      };
+    } else if (t.length === 1) {
+      const n = performance.now();
+      awal = {
+        mode: 'geser',
+        px: t[0].clientX,
+        py: t[0].clientY,
+        lx: t[0].clientX,
+        ly: t[0].clientY,
+        pindah: false,
+        jejak: [{ t: n, x: t[0].clientX, y: t[0].clientY }]
+      };
+    } else {
+      awal = null;
+    }
+  };
+
+  const gerak = e => {
+    if (!awal) return;
+    const t = e.touches;
+    e.preventDefault();
+    if (awal.mode === 'cubit' && t.length >= 2) {
+      const m = tengah(t);
+      st.z = batasZoom(awal.z * jarak(t) / awal.jarak);
+      st.x = m.x - awal.qx * st.z - dasarX;
+      st.y = m.y - awal.qy * st.z - dasarY;
+      terapkan();
+    } else if (awal.mode === 'geser' && t.length === 1) {
+      const c = t[0];
+      if (Math.hypot(c.clientX - awal.px, c.clientY - awal.py) > 8) awal.pindah = true;
+      st.x += c.clientX - awal.lx;
+      st.y += c.clientY - awal.ly;
+      awal.lx = c.clientX;
+      awal.ly = c.clientY;
+      terapkan();
+      const n = performance.now();
+      awal.jejak.push({ t: n, x: c.clientX, y: c.clientY });
+      while (awal.jejak.length > 2 && n - awal.jejak[0].t > 100) awal.jejak.shift();
+    }
+  };
+
+  const selesai = e => {
+    if (e.touches.length > 0) {
+      mulai(e);
+      if (awal && awal.mode === 'geser') awal.pindah = true;
+      return;
+    }
+    const a = awal;
+    awal = null;
+    if (!a || a.mode !== 'geser') return;
+    const c = e.changedTouches[0];
+    const n = performance.now();
+    if (!a.pindah) {
+      if (ketukAkhir && n - ketukAkhir.t < 320 && Math.hypot(c.clientX - ketukAkhir.x, c.clientY - ketukAkhir.y) < 40) {
+        ketukAkhir = null;
+        animasiZoom(st.z > 1.05 ? 1 : LAP_ZOOM_KETUK, c.clientX, c.clientY);
+      } else {
+        ketukAkhir = { t: n, x: c.clientX, y: c.clientY };
+      }
+      return;
+    }
+    ketukAkhir = null;
+    const j = a.jejak;
+    const akhirJejak = j[j.length - 1];
+    if (j.length >= 2 && n - akhirJejak.t < 80) {
+      const dt = akhirJejak.t - j[0].t;
+      if (dt > 0) luncur((akhirJejak.x - j[0].x) / dt, (akhirJejak.y - j[0].y) / dt);
+    }
+  };
+
+  const batal = () => {
+    awal = null;
+  };
+
+  const roda = e => {
+    e.preventDefault();
+    hentikan();
+    if (e.ctrlKey || e.metaKey) {
+      zoomKe(st.z * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+    } else {
+      st.x -= e.deltaX;
+      st.y -= e.deltaY;
+      terapkan();
+    }
+  };
+
+  const opsi = { passive: false };
+  stage.addEventListener('touchstart', mulai, opsi);
+  stage.addEventListener('touchmove', gerak, opsi);
+  stage.addEventListener('touchend', selesai, opsi);
+  stage.addEventListener('touchcancel', batal, opsi);
+  stage.addEventListener('wheel', roda, opsi);
+
+  lapZoomAtur = atur;
+  lapZoomHapus = () => {
+    hentikan();
+    stage.removeEventListener('touchstart', mulai, opsi);
+    stage.removeEventListener('touchmove', gerak, opsi);
+    stage.removeEventListener('touchend', selesai, opsi);
+    stage.removeEventListener('touchcancel', batal, opsi);
+    stage.removeEventListener('wheel', roda, opsi);
+    lapZoomAtur = null;
+    lapZoomHapus = null;
+  };
+  ukurDasar();
 }
 
 function tombolEscLaporan(e) {
@@ -307,6 +528,7 @@ function tombolEscLaporan(e) {
 }
 
 function bersihPratinjauLaporan() {
+  if (lapZoomHapus) lapZoomHapus();
   const ov = $('lapOv');
   if (ov) ov.remove();
   document.body.classList.remove('pv-buka');
@@ -350,6 +572,7 @@ function pratinjauLaporan() {
   document.body.appendChild(ov);
   document.body.classList.add('pv-buka');
   skalaLaporan();
+  pasangZoomLaporan($('lapStage'), $('lapWrap'));
   window.addEventListener('resize', skalaLaporan);
   document.addEventListener('keydown', tombolEscLaporan);
   try {
