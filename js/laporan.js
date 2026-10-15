@@ -68,17 +68,19 @@ function ubahBulanLaporan() {
 function viewLaporan() {
   const entri = entriLaporan();
   const daftar = daftarBulanLaporan(entri);
-  if (!daftar.length) return '';
+  pasangGayaLaporan();
+  if (!daftar.length) return '<section class="card"><h2>Laporan Pemasukan dan Pengeluaran</h2><p class="kas-kosong">Belum ada transaksi untuk dilaporkan.</p></section>';
   const key = bulanAktifLaporan(daftar);
   const r = rekapBulan(entri, key);
   const opsi = daftar.map(k => '<option value="' + k + '"' + (k === key ? ' selected' : '') + '>' + esc(labelPeriode(k)) + '</option>').join('');
   return '<section class="card"><h2>Laporan Pemasukan dan Pengeluaran</h2>' +
     '<label for="lapBulan">Bulan laporan</label>' +
     '<select id="lapBulan" onchange="ubahBulanLaporan()">' + opsi + '</select>' +
-    '<p class="hint">Saldo awal bulan ini: ' + esc(rp(r.awal)) + '</p>' +
-    '<div class="kas-ringkas"><div><span>Pemasukan</span><b class="kas-masuk">' + esc(rp(r.masuk)) + '</b></div>' +
-    '<div><span>Pengeluaran</span><b class="kas-keluar">' + esc(rp(r.keluar)) + '</b></div>' +
-    '<div><span>Saldo Akhir</span><b>' + esc(rp(r.akhir)) + '</b></div></div>' +
+    '<div class="lap-ringkas">' +
+    '<div class="lap-r"><span>Saldo Awal</span><b>' + esc(rp(r.awal)) + '</b></div>' +
+    '<div class="lap-r"><span>Pemasukan</span><b class="kas-masuk">' + esc(rp(r.masuk)) + '</b></div>' +
+    '<div class="lap-r"><span>Pengeluaran</span><b class="kas-keluar">' + esc(rp(r.keluar)) + '</b></div>' +
+    '<div class="lap-r total"><span>Saldo Akhir</span><b>' + esc(rp(r.akhir)) + '</b></div></div>' +
     '<div class="rk-aksi">' +
     '<button type="button" onclick="pratinjauLaporan()">Pratinjau</button>' +
     '<button type="button" onclick="cetakLaporanPDF()">Unduh PDF</button>' +
@@ -229,6 +231,15 @@ function cetakLaporanPDF() {
 const LEBAR_LAPORAN = 794;
 
 const GAYA_LAPORAN = `
+.lap-ringkas{margin:14px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
+.lap-r{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.lap-r span{font-size:14px;font-weight:600;color:#64748b}
+.lap-r b{font-size:17px;font-weight:800;text-align:right;white-space:nowrap;color:#142b45;font-variant-numeric:tabular-nums}
+.lap-r.total{background:#eaf2fb;border-bottom:0}
+.lap-r.total span{color:#063e78}
+.lap-r.total b{font-size:19px;color:#063e78}
+.lap-r b.kas-masuk{color:#168653}
+.lap-r b.kas-keluar{color:#dc2626}
 .pv-stage.lap{align-items:flex-start;overflow:hidden;touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
 .pv-stage.lap .pv-wrap{transform-origin:0 0}
 .lap-kertas{position:absolute;left:0;top:0;width:794px;box-sizing:border-box;padding:57px;background:#fff;color:#1a1a1a;font-family:Helvetica,Arial,sans-serif;transform-origin:0 0}
@@ -784,5 +795,5 @@ const viewRiwayatLaporanAsli = VIEWS.kuitansi;
 
 VIEWS.kuitansi = () => {
   const html = viewRiwayatLaporanAsli();
-  return subRiwayat === 'kas' ? html.replace('</div>', m => m + viewLaporan()) : html;
+  return subRiwayat === 'laporan' ? html + viewLaporan() : html;
 };
