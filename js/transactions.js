@@ -296,19 +296,15 @@ function barisRiwayatKas() {
   }));
 }
 
-function kartuKas(x) {
-  const masuk = !x.keluar;
-  return '<article class="rk-item">' +
-    '<div class="rk-nama">' + esc(x.ket) + (x.menunggu ? ' <span class="kas-tunggu">menunggu sinkron</span>' : '') + '</div>' +
-    '<div class="rk-info"><span class="rk-periode">' + (masuk ? 'Kas Masuk' : 'Kas Keluar') + ' · ' + esc(fmtTgl(x.tgl)) + '</span>' +
-    '<span class="rk-nominal ' + (masuk ? 'kas-masuk' : 'kas-keluar') + '">' + (masuk ? '' : '-') + esc(rp(masuk ? x.masuk : x.keluar)) + '</span></div>' +
-    '</article>';
-}
-
 const GAYA_DAFTAR_KAS = `
-.kas-daftar{margin-top:6px}
-.kas-daftar .rk-item{width:auto;max-width:none;margin:0;padding:12px 0;background:transparent;border:0;border-top:1px solid #e3e9f1;border-radius:0;box-shadow:none}
-.kas-daftar .kas-kosong{padding-top:10px;border-top:1px solid #e3e9f1}
+.kas-judul{margin:0 0 2px}
+.kas-sub{margin:0 0 4px;font-size:14px}
+.kas-hari{margin:16px 0 0;padding:7px 12px;font-size:13px;font-weight:700;letter-spacing:.02em;color:#475569;background:#f1f5f9;border-radius:8px}
+.kas-baris{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:13px 2px;border-bottom:1px solid #e8edf3}
+.kas-grup .kas-baris:last-child{border-bottom:0}
+.kas-ket{min-width:0;font-size:16px;font-weight:600;line-height:1.35;color:#142b45;overflow-wrap:anywhere}
+.kas-nilai{flex:none;font-size:16px;font-weight:800;line-height:1.35;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kas-catatan{margin:14px 0 0;font-size:13px;color:#64748b;text-align:center}
 `;
 
 function pasangGayaDaftarKas() {
@@ -317,16 +313,36 @@ function pasangGayaDaftarKas() {
   document.head.appendChild(el);
 }
 
+function barisKas(x) {
+  const masuk = !x.keluar;
+  return '<div class="kas-baris"><div class="kas-ket">' + esc(x.ket) +
+    (x.menunggu ? ' <span class="kas-tunggu">menunggu sinkron</span>' : '') + '</div>' +
+    '<div class="kas-nilai ' + (masuk ? 'kas-masuk' : 'kas-keluar') + '">' + (masuk ? '+' : '-') + esc(rp(masuk ? x.masuk : x.keluar)) + '</div></div>';
+}
+
+function kelompokHari(baris) {
+  const hasil = [];
+  baris.forEach(x => {
+    const akhir = hasil[hasil.length - 1];
+    if (akhir && akhir.tgl === x.tgl) akhir.isi.push(x);
+    else hasil.push({ tgl: x.tgl, isi: [x] });
+  });
+  return hasil;
+}
+
 function viewKasRiwayat() {
   const baris = barisRiwayatKas();
   if (!baris.length) {
-    return '<section class="card"><h2>Riwayat Kas Digital</h2><p class="kas-kosong">Belum ada transaksi kas.</p></section>';
+    return '<section class="card"><h2 class="kas-judul">Riwayat Kas Digital</h2><p class="kas-kosong">Belum ada transaksi kas.</p></section>';
   }
-  return '<section class="card"><h2>Riwayat Kas Digital</h2>' +
-    '<p class="hint">Semua pemasukan (iuran dan kas masuk) serta pengeluaran, terbaru di atas.</p>' +
-    '<div class="kas-daftar">' + baris.slice(0, BATAS_KARTU_KAS).map(kartuKas).join('') +
-    (baris.length > BATAS_KARTU_KAS ? '<p class="kas-kosong">Menampilkan ' + BATAS_KARTU_KAS + ' transaksi terbaru.</p>' : '') +
-    '</div></section>';
+  const tampil = baris.slice(0, BATAS_KARTU_KAS);
+  return '<section class="card"><h2 class="kas-judul">Riwayat Kas Digital</h2>' +
+    '<p class="hint kas-sub">Iuran dan kas, terbaru di atas.</p>' +
+    kelompokHari(tampil).map(g =>
+      '<div class="kas-grup"><div class="kas-hari">' + esc(fmtTgl(g.tgl)) + '</div>' + g.isi.map(barisKas).join('') + '</div>'
+    ).join('') +
+    (baris.length > BATAS_KARTU_KAS ? '<p class="kas-catatan">Menampilkan ' + BATAS_KARTU_KAS + ' transaksi terbaru.</p>' : '') +
+    '</section>';
 }
 
 const viewDasborAsli = VIEWS.dasbor;
