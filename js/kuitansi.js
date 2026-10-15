@@ -373,23 +373,43 @@ function tombolEsc(e) {
   if (e.key === 'Escape') tutupPreview();
 }
 
-function pasangZoomPratinjau(stage, wrap) {
+function pasangZoomPratinjau(stage, wrap, rataAtas) {
+  const BANTALAN = 12;
   const st = { z: 1, x: 0, y: 0 };
   let awal = null;
 
-  const pusat = () => {
+  const ukur = () => {
     const r = stage.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const h = wrap.offsetHeight;
+    return {
+      cx: (r.left + r.right) / 2,
+      cy: rataAtas ? r.top + BANTALAN + h / 2 : (r.top + r.bottom) / 2,
+      w: wrap.offsetWidth,
+      h,
+      kiri: r.left + BANTALAN,
+      kanan: r.right - BANTALAN,
+      atas: r.top + BANTALAN,
+      bawah: r.bottom - BANTALAN
+    };
+  };
+
+  const batasi = (pusat, ukuran, awalRuang, akhirRuang, geser, ke_atas) => {
+    const sisi = ukuran / 2;
+    if (ukuran <= akhirRuang - awalRuang) {
+      return ke_atas ? awalRuang - pusat + sisi : (awalRuang + akhirRuang) / 2 - pusat;
+    }
+    return Math.min(awalRuang - pusat + sisi, Math.max(akhirRuang - pusat - sisi, geser));
   };
 
   const terapkan = () => {
+    const u = ukur();
     st.z = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, st.z));
-    const mx = Math.max(0, (wrap.offsetWidth * st.z - stage.clientWidth) / 2);
-    const my = Math.max(0, (wrap.offsetHeight * st.z - stage.clientHeight) / 2);
-    st.x = Math.min(mx, Math.max(-mx, st.x));
-    st.y = Math.min(my, Math.max(-my, st.y));
+    st.x = batasi(u.cx, u.w * st.z, u.kiri, u.kanan, st.x, false);
+    st.y = batasi(u.cy, u.h * st.z, u.atas, u.bawah, st.y, !!rataAtas);
     wrap.style.transform = 'translate(' + st.x.toFixed(1) + 'px,' + st.y.toFixed(1) + 'px) scale(' + st.z.toFixed(3) + ')';
   };
+
+  const jarak = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
 
   const titikTengah = t => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
 
@@ -397,15 +417,15 @@ function pasangZoomPratinjau(stage, wrap) {
     const t = e.touches;
     if (t.length >= 2) {
       const m = titikTengah(t);
-      const c = pusat();
+      const u = ukur();
       awal = {
         mode: 'cubit',
-        jarak: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) || 1,
+        jarak: jarak(t) || 1,
         z: st.z,
-        qx: (m.x - c.x - st.x) / st.z,
-        qy: (m.y - c.y - st.y) / st.z
+        qx: (m.x - u.cx - st.x) / st.z,
+        qy: (m.y - u.cy - st.y) / st.z
       };
-    } else if (t.length === 1 && st.z > 1) {
+    } else if (t.length === 1) {
       awal = { mode: 'geser', px: t[0].clientX, py: t[0].clientY, x: st.x, y: st.y };
     } else {
       awal = null;
@@ -417,12 +437,11 @@ function pasangZoomPratinjau(stage, wrap) {
     const t = e.touches;
     if (awal.mode === 'cubit' && t.length >= 2) {
       e.preventDefault();
-      const jarak = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
       const m = titikTengah(t);
-      const c = pusat();
-      st.z = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, awal.z * jarak / awal.jarak));
-      st.x = m.x - c.x - awal.qx * st.z;
-      st.y = m.y - c.y - awal.qy * st.z;
+      const u = ukur();
+      st.z = Math.min(ZOOM_MAKS, Math.max(ZOOM_MIN, awal.z * jarak(t) / awal.jarak));
+      st.x = m.x - u.cx - awal.qx * st.z;
+      st.y = m.y - u.cy - awal.qy * st.z;
       terapkan();
     } else if (awal.mode === 'geser' && t.length === 1) {
       e.preventDefault();
@@ -439,7 +458,7 @@ function pasangZoomPratinjau(stage, wrap) {
   stage.addEventListener('touchcancel', mulai, opsi);
   window.addEventListener('resize', terapkan);
 
-  zoomBersih = () => {
+  return () => {
     window.removeEventListener('resize', terapkan);
   };
 }
@@ -472,8 +491,8 @@ function previewKuitansi(pid, key) {
   document.body.appendChild(ov);
   document.body.classList.add('pv-buka');
   skalaKertas();
-  pasangZoomPratinjau($('pvStage'), $('pvWrap'));
   window.addEventListener('resize', skalaKertas);
+  zoomBersih = pasangZoomPratinjau($('pvStage'), $('pvWrap'), false);
   document.addEventListener('keydown', tombolEsc);
   try {
     history.pushState({ pratinjau: true }, '');
