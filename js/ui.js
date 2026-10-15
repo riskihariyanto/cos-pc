@@ -315,7 +315,7 @@ pasangKetukRahasia();
 window.addEventListener('hashchange', render);
 
 function pesanBantuan() {
-  const baris = ['Halo, saya mengalami kendala pada aplikasi Kuitansi COS.', ''];
+  const baris = ['Assalaamu'alaikum wa rahmatullahi wa barakaatuh Mas Riski, saya mengalami kendala pada aplikasi Kuitansi COS.', ''];
   if (S && S.profile) {
     baris.push('Pengguna: ' + ((S.pengaturan && S.pengaturan.namaPC) || 'Pengurus Cabang'));
     const tab = TABS_PC.filter(t => t[0] === S.tab)[0];
