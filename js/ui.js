@@ -316,9 +316,17 @@ window.addEventListener('hashchange', render);
 
 const NAMA_PENERIMA_BANTUAN = 'Bapak Riski';
 
+function salamWaktu() {
+  const jam = new Date().getHours();
+  if (jam < 11) return 'Selamat pagi';
+  if (jam < 15) return 'Selamat siang';
+  if (jam < 18) return 'Selamat sore';
+  return 'Selamat malam';
+}
+
 function pesanBantuan() {
   const nama = (S && S.profile && S.pengaturan && S.pengaturan.namaPC) || '';
-  const baris = ["Assalamu'alaikum Wr. Wb., " + NAMA_PENERIMA_BANTUAN + '.', ''];
+  const baris = [salamWaktu() + ', ' + NAMA_PENERIMA_BANTUAN + '.', ''];
   baris.push(nama ? 'Saya dari ' + nama + ', pengguna aplikasi Kuitansi COS.' : 'Saya pengguna aplikasi Kuitansi COS.');
   baris.push('Mohon bantuan Bapak terkait kendala berikut:', '');
   const tab = S && S.profile ? TABS_PC.filter(t => t[0] === S.tab)[0] : null;
