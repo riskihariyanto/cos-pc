@@ -298,14 +298,22 @@ function barisRiwayatKas() {
 
 const GAYA_DAFTAR_KAS = `
 .kas-judul{margin:0 0 2px}
-.kas-sub{margin:0 0 4px;font-size:14px}
-.kas-hari{margin:16px 0 0;padding:7px 12px;font-size:13px;font-weight:700;letter-spacing:.02em;color:#475569;background:#f1f5f9;border-radius:8px}
-.kas-baris{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:13px 2px;border-bottom:1px solid #e8edf3}
-.kas-grup .kas-baris:last-child{border-bottom:0}
-.kas-ket{min-width:0;font-size:16px;font-weight:600;line-height:1.35;color:#142b45;overflow-wrap:anywhere}
-.kas-nilai{flex:none;font-size:16px;font-weight:800;line-height:1.35;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kas-sub{margin:0 0 6px;font-size:14px}
+.riw-daftar{margin:0;padding:0;list-style:none}
+.riw-baris{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #e8edf3}
+.riw-baris:last-child{border-bottom:0}
+.riw-ikon{display:flex;align-items:center;justify-content:center;flex:none;width:48px;height:48px;background:#f3f6fb;border-radius:14px}
+.riw-ikon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.riw-isi{flex:1;min-width:0}
+.riw-tgl{display:block;font-size:13px;font-weight:500;line-height:1.3;color:#94a3b8}
+.riw-ket{display:block;margin-top:2px;font-size:16.5px;font-weight:600;line-height:1.3;color:#142b45;overflow-wrap:anywhere}
+.riw-isi .kas-tunggu{margin-top:4px}
+.riw-nilai{flex:none;max-width:42%;font-size:16px;font-weight:700;line-height:1.3;text-align:right;font-variant-numeric:tabular-nums}
 .kas-catatan{margin:14px 0 0;font-size:13px;color:#64748b;text-align:center}
 `;
+
+const IKON_PANAH_MASUK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
+const IKON_PANAH_KELUAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>';
 
 function pasangGayaDaftarKas() {
   const el = document.createElement('style');
@@ -315,19 +323,13 @@ function pasangGayaDaftarKas() {
 
 function barisKas(x) {
   const masuk = !x.keluar;
-  return '<div class="kas-baris"><div class="kas-ket">' + esc(x.ket) +
-    (x.menunggu ? ' <span class="kas-tunggu">menunggu sinkron</span>' : '') + '</div>' +
-    '<div class="kas-nilai ' + (masuk ? 'kas-masuk' : 'kas-keluar') + '">' + (masuk ? '+' : '-') + esc(rp(masuk ? x.masuk : x.keluar)) + '</div></div>';
-}
-
-function kelompokHari(baris) {
-  const hasil = [];
-  baris.forEach(x => {
-    const akhir = hasil[hasil.length - 1];
-    if (akhir && akhir.tgl === x.tgl) akhir.isi.push(x);
-    else hasil.push({ tgl: x.tgl, isi: [x] });
-  });
-  return hasil;
+  const warna = masuk ? 'kas-masuk' : 'kas-keluar';
+  return '<li class="riw-baris">' +
+    '<span class="riw-ikon ' + warna + '" role="img" aria-label="' + (masuk ? 'Kas masuk' : 'Kas keluar') + '">' + (masuk ? IKON_PANAH_MASUK : IKON_PANAH_KELUAR) + '</span>' +
+    '<div class="riw-isi"><span class="riw-tgl">' + esc(fmtTgl(x.tgl)) + '</span>' +
+    '<span class="riw-ket">' + esc(x.ket) + '</span>' +
+    (x.menunggu ? '<span class="kas-tunggu">menunggu sinkron</span>' : '') + '</div>' +
+    '<div class="riw-nilai ' + warna + '">' + esc(rp(masuk ? x.masuk : x.keluar)) + '</div></li>';
 }
 
 function viewKasRiwayat() {
@@ -338,9 +340,7 @@ function viewKasRiwayat() {
   const tampil = baris.slice(0, BATAS_KARTU_KAS);
   return '<section class="card"><h2 class="kas-judul">Riwayat Kas Digital</h2>' +
     '<p class="hint kas-sub">Iuran dan kas, terbaru di atas.</p>' +
-    kelompokHari(tampil).map(g =>
-      '<div class="kas-grup"><div class="kas-hari">' + esc(fmtTgl(g.tgl)) + '</div>' + g.isi.map(barisKas).join('') + '</div>'
-    ).join('') +
+    '<ul class="riw-daftar">' + tampil.map(barisKas).join('') + '</ul>' +
     (baris.length > BATAS_KARTU_KAS ? '<p class="kas-catatan">Menampilkan ' + BATAS_KARTU_KAS + ' transaksi terbaru.</p>' : '') +
     '</section>';
 }
