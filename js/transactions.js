@@ -1,10 +1,7 @@
 const KUNCI_CACHE_KAS = 'cos_kas_cache';
 const KUNCI_ANTRIAN_KAS = 'cos_kas_antrian';
-const BATAS_BARIS_KAS = 200;
 const BATAS_KARTU_KAS = 100;
 
-let totalSaldo = 0;
-let saldoServer = 0;
 let kasList = [];
 let kasIds = {};
 let subCatat = 'kuitansi';
@@ -54,28 +51,23 @@ function antrianBelumMasuk() {
 }
 
 function hitungTotal() {
-  totalSaldo = antrianBelumMasuk().reduce((t, x) => t + selisihKas(x), saldoServer);
-  return totalSaldo;
+  return entriLaporan().reduce((t, x) => t + x.masuk - x.keluar, 0);
 }
 
 function muatCacheKas() {
   const c = bacaJson(KUNCI_CACHE_KAS, {});
-  saldoServer = Number(c.saldo) || 0;
   kasList = Array.isArray(c.log) ? c.log : [];
-  hitungTotal();
 }
 
 function terapkanKas(v) {
   const data = v || {};
   const arr = Object.keys(data).map(k => Object.assign({}, data[k], { id: k }));
-  saldoServer = arr.reduce((t, x) => t + selisihKas(x), 0);
   kasIds = {};
   arr.forEach(x => { kasIds[x.id] = 1; });
   kasList = arr.sort(urutKas);
-  simpanJson(KUNCI_CACHE_KAS, { saldo: saldoServer, log: kasList.slice(0, BATAS_BARIS_KAS) });
+  simpanJson(KUNCI_CACHE_KAS, { log: kasList });
   const sisa = antrianKas().filter(x => !kasIds[x.id]);
   if (sisa.length !== antrianKas().length) simpanJson(KUNCI_ANTRIAN_KAS, sisa);
-  hitungTotal();
 }
 
 function daftarKasGabungan() {
@@ -109,7 +101,6 @@ function sinkronKas() {
   });
   return rantai.then(() => {
     sedangSinkron = false;
-    hitungTotal();
     render();
     if (ditolak) toast('Belum bisa disimpan: aturan database belum mengizinkan kas. Data tetap aman di HP.');
     else if (terkirim && kasTerakhir) {
@@ -197,7 +188,6 @@ function simpanKas() {
   simpanJson(KUNCI_ANTRIAN_KAS, antrianKas().concat([item]));
   draftKas = { jenis, tgl: '', nominal: '', ket: '' };
   kasTerakhir = { jenis, nominal, ket };
-  hitungTotal();
   S.lastTab = null;
   render();
   if (!navigator.onLine) {
@@ -274,9 +264,10 @@ function sakelarSub(aktif, fungsi, pilihan) {
 
 function kartuSaldo() {
   const menunggu = antrianBelumMasuk().length;
-  return '<section class="kas-saldo' + (totalSaldo < 0 ? ' minus' : '') + '">' +
+  const saldo = hitungTotal();
+  return '<section class="kas-saldo' + (saldo < 0 ? ' minus' : '') + '">' +
     '<span class="kas-saldo-label">Sisa Saldo Kas Digital PC</span>' +
-    '<b class="kas-saldo-nilai">' + esc(rp(totalSaldo)) + '</b>' +
+    '<b class="kas-saldo-nilai">' + esc(rp(saldo)) + '</b>' +
     (menunggu ? '<small class="kas-saldo-info">' + menunggu + ' transaksi menunggu sinkron</small>' : '') +
     '</section>';
 }
@@ -297,26 +288,30 @@ function viewKasForm() {
     '<button class="btn" onclick="simpanKas()">Simpan Transaksi</button></section>';
 }
 
+function barisRiwayatKas() {
+  const antre = {};
+  antrianBelumMasuk().forEach(x => { antre[x.tgl + '|' + (x.ket || '-') + '|' + (Number(x.dibuat) || 0)] = true; });
+  return entriLaporan().reverse().map(x => Object.assign({}, x, {
+    menunggu: !!antre[x.tgl + '|' + x.ket + '|' + x.urut]
+  }));
+}
+
 function kartuKas(x) {
-  const masuk = x.jenis !== 'keluar';
+  const masuk = !x.keluar;
   return '<article class="rk-item">' +
     '<div class="rk-nama">' + esc(x.ket) + (x.menunggu ? ' <span class="kas-tunggu">menunggu sinkron</span>' : '') + '</div>' +
     '<div class="rk-info"><span class="rk-periode">' + (masuk ? 'Kas Masuk' : 'Kas Keluar') + ' · ' + esc(fmtTgl(x.tgl)) + '</span>' +
-    '<span class="rk-nominal ' + (masuk ? 'kas-masuk' : 'kas-keluar') + '">' + (masuk ? '' : '-') + esc(rp(x.nominal)) + '</span></div>' +
+    '<span class="rk-nominal ' + (masuk ? 'kas-masuk' : 'kas-keluar') + '">' + (masuk ? '' : '-') + esc(rp(masuk ? x.masuk : x.keluar)) + '</span></div>' +
     '</article>';
 }
 
 function viewKasRiwayat() {
-  const baris = daftarKasGabungan();
+  const baris = barisRiwayatKas();
   if (!baris.length) {
     return '<section class="card"><h2>Riwayat Kas Digital</h2><p class="kas-kosong">Belum ada transaksi kas.</p></section>';
   }
-  const masuk = baris.filter(x => x.jenis !== 'keluar').reduce((t, x) => t + (Number(x.nominal) || 0), 0);
-  const keluar = baris.filter(x => x.jenis === 'keluar').reduce((t, x) => t + (Number(x.nominal) || 0), 0);
   return '<section class="card"><h2>Riwayat Kas Digital</h2>' +
-    '<div class="kas-ringkas"><div><span>Total Masuk</span><b class="kas-masuk">' + esc(rp(masuk)) + '</b></div>' +
-    '<div><span>Total Keluar</span><b class="kas-keluar">' + esc(rp(keluar)) + '</b></div>' +
-    '<div><span>Saldo</span><b>' + esc(rp(masuk - keluar)) + '</b></div></div></section>' +
+    '<p class="hint">Semua pemasukan (iuran dan kas masuk) serta pengeluaran, terbaru di atas.</p></section>' +
     baris.slice(0, BATAS_KARTU_KAS).map(kartuKas).join('') +
     (baris.length > BATAS_KARTU_KAS ? '<p class="kas-kosong">Menampilkan ' + BATAS_KARTU_KAS + ' transaksi terbaru.</p>' : '');
 }
