@@ -305,15 +305,28 @@ function kartuKas(x) {
     '</article>';
 }
 
+const GAYA_DAFTAR_KAS = `
+.kas-daftar{margin-top:6px}
+.kas-daftar .rk-item{width:auto;max-width:none;margin:0;padding:12px 0;background:transparent;border:0;border-top:1px solid #e3e9f1;border-radius:0;box-shadow:none}
+.kas-daftar .kas-kosong{padding-top:10px;border-top:1px solid #e3e9f1}
+`;
+
+function pasangGayaDaftarKas() {
+  const el = document.createElement('style');
+  el.textContent = GAYA_DAFTAR_KAS;
+  document.head.appendChild(el);
+}
+
 function viewKasRiwayat() {
   const baris = barisRiwayatKas();
   if (!baris.length) {
     return '<section class="card"><h2>Riwayat Kas Digital</h2><p class="kas-kosong">Belum ada transaksi kas.</p></section>';
   }
   return '<section class="card"><h2>Riwayat Kas Digital</h2>' +
-    '<p class="hint">Semua pemasukan (iuran dan kas masuk) serta pengeluaran, terbaru di atas.</p></section>' +
-    baris.slice(0, BATAS_KARTU_KAS).map(kartuKas).join('') +
-    (baris.length > BATAS_KARTU_KAS ? '<p class="kas-kosong">Menampilkan ' + BATAS_KARTU_KAS + ' transaksi terbaru.</p>' : '');
+    '<p class="hint">Semua pemasukan (iuran dan kas masuk) serta pengeluaran, terbaru di atas.</p>' +
+    '<div class="kas-daftar">' + baris.slice(0, BATAS_KARTU_KAS).map(kartuKas).join('') +
+    (baris.length > BATAS_KARTU_KAS ? '<p class="kas-kosong">Menampilkan ' + BATAS_KARTU_KAS + ' transaksi terbaru.</p>' : '') +
+    '</div></section>';
 }
 
 const viewDasborAsli = VIEWS.dasbor;
@@ -350,3 +363,5 @@ resetData = function () {
 window.addEventListener('online', sinkronKas);
 
 muatCacheKas();
+
+pasangGayaDaftarKas();
