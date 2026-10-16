@@ -77,6 +77,10 @@ function daftarPilihanPUK() {
   return out;
 }
 
+function nomorHPTersimpan(pid) {
+  return pid && S.puk[pid] ? S.puk[pid].noHP || '' : '';
+}
+
 function ubahPUKCatat() {
   const pil = $('fPukPilih').value;
   if (pil === '__baru') {
@@ -87,7 +91,22 @@ function ubahPUKCatat() {
     const o = daftarPilihanPUK().filter(x => x.nilai === pil)[0];
     S.tmp.pukNama = o ? o.nama : '';
   }
+  if ($('fHP')) $('fHP').value = tampilHP(nomorHPTersimpan(cariPUK(S.tmp.pukNama)));
   render();
+}
+
+async function ubahNomorPUK(pid) {
+  const p = S.puk[pid];
+  if (!p) return toast('Data PUK tidak ditemukan');
+  const isi = window.prompt('Nomor WhatsApp PUK ' + (p.namaPerusahaan || '') + '\n(kosongkan untuk menghapus)', tampilHP(p.noHP));
+  if (isi === null) return;
+  const bersih = isi.trim();
+  const nomor = normalisasiHP(bersih);
+  if (bersih && !nomor) return toast('Nomor HP tidak valid. Contoh: 081234567890');
+  await jalankan(
+    () => nomor ? db.ref('puk/' + pid + '/noHP').set(nomor) : db.ref('puk/' + pid + '/noHP').remove(),
+    nomor ? 'Nomor HP disimpan' : 'Nomor HP dihapus'
+  );
 }
 
 function panelTerkunci(pid, key, i) {
@@ -153,6 +172,8 @@ function viewRiwayatKuitansi() {
       '<div class="rk-nomor">' + esc(i.nomorKuitansi) + '</div>' +
       '<div class="rk-info"><span class="rk-periode">' + esc(labelPeriode(i.key)) + ' · ' + esc(labelMetode(i.metode) || '-') + '</span>' +
       '<span class="rk-nominal">' + rp(i.total) + '</span></div>' +
+      '<div class="rk-hp"><span>WA: ' + (p.noHP ? esc(tampilHP(p.noHP)) : 'belum ada nomor') + '</span>' +
+      '<button type="button" onclick="ubahNomorPUK(\'' + i.pid + '\')">' + (p.noHP ? 'Ubah' : 'Tambah') + '</button></div>' +
       '<div class="rk-aksi">' +
       '<button type="button" onclick="previewKuitansi(' + a + ')">Pratinjau</button>' +
       '<button type="button" onclick="unduhKuitansi(' + a + ')">Unduh PDF</button>' +
@@ -189,6 +210,8 @@ function viewCatat() {
     return kepala + '<p class="peringatan">' + esc(pesanAdmin()) + '</p>' + panelTerkunci(pid, key, ada) + '</section>';
   }
   return kepala +
+    '<label for="fHP">Nomor HP / WhatsApp PUK (opsional)</label><input id="fHP" type="tel" inputmode="tel" autocomplete="off" placeholder="081234567890" value="' + esc(tampilHP(nomorHPTersimpan(pid))) + '">' +
+    '<p class="hint">Dipakai untuk mengirim kuitansi lewat WhatsApp dan tersimpan untuk PUK ini.</p>' +
     '<label for="fMetode">Metode</label><select id="fMetode"><option value="Tunai">Cash (Tunai)</option><option value="Transfer">Transfer</option></select>' +
     '<label for="fTotal">Total Nominal Setoran (Rp)</label><input id="fTotal" type="number" inputmode="numeric" placeholder="20000000">' +
     '<label for="fTanggal">Tanggal terima</label><input id="fTanggal" type="date" value="' + hari + '">' +
@@ -206,12 +229,16 @@ async function catatSetoran() {
   const tgl = $('fTanggal').value;
   const total = angka($('fTotal').value);
   if (!nama || !bulan || !tahun || !(total > 0) || !tgl) return toast('Isi nama PUK, total nominal, dan tanggal terima');
+  const hpMasuk = $('fHP') ? $('fHP').value.trim() : '';
+  const hpBaru = normalisasiHP(hpMasuk);
+  if (hpMasuk && !hpBaru) return toast('Nomor HP tidak valid. Contoh: 081234567890');
 
   const key = periodeKey(tahun, bulan);
   let pid = cariPUK(nama);
   const ada = pid ? (S.iuran[pid] || {})[key] : null;
   if (periodeKunci(ada)) return toast(pesanAdmin());
   const namaTersimpan = pid ? S.puk[pid].namaPerusahaan : nama;
+  let gagalHP = false;
 
   const ok = await jalankan(async () => {
     if (!pid) {
@@ -236,6 +263,9 @@ async function catatSetoran() {
     const berhasil = await klaimPeriode(pid, key, data);
     if (!berhasil) throw new Error('Kuitansi untuk PUK dan bulan ini sudah diterbitkan');
     if (ada) await db.ref('bukti/' + pid + '/' + key).remove().catch(() => {});
+    if (hpBaru && hpBaru !== nomorHPTersimpan(pid)) {
+      await db.ref('puk/' + pid + '/noHP').set(hpBaru).catch(() => { gagalHP = true; });
+    }
     return true;
   });
   if (ok) {
@@ -249,6 +279,7 @@ async function catatSetoran() {
       detail: 'PUK ' + namaTersimpan + ' · ' + labelPeriode(key),
       aksi: { label: 'Lihat Kuitansi', fn: () => previewKuitansi(pid, key) }
     });
+    if (gagalHP) toast('Kuitansi terbit, tetapi nomor HP gagal disimpan');
   }
 }
 
