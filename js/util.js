@@ -10,6 +10,19 @@ const ribuan = v => {
 
 const angka = v => Number(String(v == null ? '' : v).replace(/\D/g, '')) || 0;
 
+const normalisasiHP = v => {
+  let d = String(v == null ? '' : v).replace(/\D/g, '');
+  if (d.indexOf('0062') === 0) d = d.slice(2);
+  if (d.charAt(0) === '0') d = '62' + d.slice(1);
+  else if (d.charAt(0) === '8') d = '62' + d;
+  return /^628\d{8,11}$/.test(d) ? d : '';
+};
+
+const tampilHP = v => {
+  const d = String(v == null ? '' : v).replace(/\D/g, '');
+  return d.indexOf('62') === 0 ? '0' + d.slice(2) : d;
+};
+
 const rp = n => {
   const x = Math.round(Number(n) || 0);
   return (x < 0 ? '-' : '') + 'Rp ' + (ribuan(Math.abs(x)) || '0');
