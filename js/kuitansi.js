@@ -235,10 +235,51 @@ function dataKuitansi(pid, key) {
   return (S.iuran[pid] || {})[key];
 }
 
+function salamWaktu() {
+  const jam = new Date().getHours();
+  if (jam < 11) return 'Selamat pagi';
+  if (jam < 15) return 'Selamat siang';
+  if (jam < 18) return 'Selamat sore';
+  return 'Selamat malam';
+}
+
+function nomorWAPUK(pid) {
+  return normalisasiHP((S.puk[pid] || {}).noHP);
+}
+
 function teksBagikanKuitansi(pid, key) {
   const i = (S.iuran[pid] || {})[key] || {};
+  const c = S.pengaturan || {};
   const nama = (S.puk[pid] || {}).namaPerusahaan || '';
-  return 'Kuitansi iuran COS PUK ' + nama + ' periode ' + labelPeriode(key) + '\nNo: ' + (i.nomorKuitansi || '-');
+  const metode = labelMetode(i.metode);
+  const pengirim = [c.jabatan || 'Bendahara', c.namaPC].filter(Boolean).join(' ');
+  return [
+    salamWaktu() + ', Bapak/Ibu Pengurus PUK ' + nama + '.',
+    '',
+    'Terima kasih, iuran COS periode ' + labelPeriode(key) + ' sebesar ' + rp(i.total) + (metode ? ' (' + metode + ')' : '') + ' telah kami terima pada ' + fmtTgl(i.tanggalSetor) + '.',
+    '',
+    'Kuitansi resmi No. ' + (i.nomorKuitansi || '-') + ' terlampir pada pesan ini. Mohon disimpan sebagai bukti pembayaran.',
+    '',
+    'Apabila ada data yang kurang sesuai, silakan balas pesan ini.',
+    '',
+    'Hormat kami,',
+    pengirim
+  ].join('\n');
+}
+
+async function kirimBerkasWA(pid, berkas, teks, jenis) {
+  const hp = nomorWAPUK(pid);
+  if (!hp && navigator.canShare && navigator.canShare({ files: [berkas] })) {
+    try {
+      await navigator.share({ files: [berkas], title: 'Kuitansi Iuran COS', text: teks });
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+    }
+  }
+  unduhBlob(berkas, berkas.name);
+  toast(jenis + ' tersimpan. Lampirkan di chat WhatsApp' + (hp ? ' ke ' + tampilHP(hp) : '') + '.');
+  setTimeout(() => { window.open('https://wa.me/' + hp + '?text=' + encodeURIComponent(teks), '_blank'); }, 700);
 }
 
 function namaBerkasKuitansi(pid, key, ext) {
@@ -617,17 +658,7 @@ function bagikanWAPratinjau(tombol) {
   denganTombol(tombol, async () => {
     const blob = await ambilFoto();
     const berkas = new File([blob], namaBerkasKuitansi(pid, key, 'png'), { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [berkas] })) {
-      try {
-        await navigator.share({ files: [berkas], title: 'Kuitansi Iuran COS', text: teks });
-        return;
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;
-      }
-    }
-    unduhBlob(blob, berkas.name);
-    toast('Foto tersimpan. Lampirkan di WhatsApp.');
-    setTimeout(() => { window.open('https://wa.me/?text=' + encodeURIComponent(teks), '_blank'); }, 700);
+    await kirimBerkasWA(pid, berkas, teks, 'Foto');
   });
 }
 
@@ -637,16 +668,6 @@ function kirimPDFWA(tombol, pid, key) {
   denganTombol(tombol, async () => {
     const blob = buatPDF(pid, key).output('blob');
     const berkas = new File([blob], namaBerkasKuitansi(pid, key, 'pdf'), { type: 'application/pdf' });
-    if (navigator.canShare && navigator.canShare({ files: [berkas] })) {
-      try {
-        await navigator.share({ files: [berkas], title: 'Kuitansi Iuran COS', text: teks });
-        return;
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;
-      }
-    }
-    unduhBlob(blob, berkas.name);
-    toast('PDF tersimpan. Lampirkan di WhatsApp.');
-    setTimeout(() => { window.open('https://wa.me/?text=' + encodeURIComponent(teks), '_blank'); }, 700);
+    await kirimBerkasWA(pid, berkas, teks, 'PDF');
   });
 }
