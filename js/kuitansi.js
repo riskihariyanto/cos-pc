@@ -247,7 +247,7 @@ function nomorWAPUK(pid) {
   return normalisasiHP((S.puk[pid] || {}).noHP);
 }
 
-function teksBagikanKuitansi(pid, key) {
+function teksBagikanKuitansi(pid, key, tanpaLampiran) {
   const i = (S.iuran[pid] || {})[key] || {};
   const c = S.pengaturan || {};
   const nama = (S.puk[pid] || {}).namaPerusahaan || '';
@@ -258,7 +258,7 @@ function teksBagikanKuitansi(pid, key) {
     '',
     'Terima kasih, iuran COS periode ' + labelPeriode(key) + ' sebesar ' + rp(i.total) + (metode ? ' (' + metode + ')' : '') + ' telah kami terima pada ' + fmtTgl(i.tanggalSetor) + '.',
     '',
-    'Kuitansi resmi No. ' + (i.nomorKuitansi || '-') + ' terlampir pada pesan ini. Mohon disimpan sebagai bukti pembayaran.',
+    'Kuitansi resmi No. ' + (i.nomorKuitansi || '-') + (tanpaLampiran ? ' akan kami kirimkan dalam pesan terpisah.' : ' terlampir pada pesan ini.') + ' Mohon disimpan sebagai bukti pembayaran.',
     '',
     'Apabila ada data yang kurang sesuai, silakan balas pesan ini.',
     '',
@@ -269,7 +269,7 @@ function teksBagikanKuitansi(pid, key) {
 
 async function kirimBerkasWA(pid, berkas, teks, jenis) {
   const hp = nomorWAPUK(pid);
-  if (!hp && navigator.canShare && navigator.canShare({ files: [berkas] })) {
+  if (navigator.canShare && navigator.canShare({ files: [berkas] })) {
     try {
       await navigator.share({ files: [berkas], title: 'Kuitansi Iuran COS', text: teks });
       return;
@@ -660,6 +660,13 @@ function bagikanWAPratinjau(tombol) {
     const berkas = new File([blob], namaBerkasKuitansi(pid, key, 'png'), { type: 'image/png' });
     await kirimBerkasWA(pid, berkas, teks, 'Foto');
   });
+}
+
+function chatWAPUK(pid, key) {
+  if (!dataKuitansi(pid, key)) return toast('Data kuitansi tidak ditemukan');
+  const hp = nomorWAPUK(pid);
+  if (!hp) return toast('Nomor HP PUK belum diisi. Ketuk Tambah pada baris WA.');
+  window.open('https://wa.me/' + hp + '?text=' + encodeURIComponent(teksBagikanKuitansi(pid, key, true)), '_blank');
 }
 
 function kirimPDFWA(tombol, pid, key) {
