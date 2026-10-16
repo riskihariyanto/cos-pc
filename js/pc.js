@@ -173,6 +173,7 @@ function viewRiwayatKuitansi() {
       '<div class="rk-info"><span class="rk-periode">' + esc(labelPeriode(i.key)) + ' · ' + esc(labelMetode(i.metode) || '-') + '</span>' +
       '<span class="rk-nominal">' + rp(i.total) + '</span></div>' +
       '<div class="rk-hp"><span>WA: ' + (p.noHP ? esc(tampilHP(p.noHP)) : 'belum ada nomor') + '</span>' +
+      (p.noHP ? '<button type="button" onclick="chatWAPUK(' + a + ')">Chat</button>' : '') +
       '<button type="button" onclick="ubahNomorPUK(\'' + i.pid + '\')">' + (p.noHP ? 'Ubah' : 'Tambah') + '</button></div>' +
       '<div class="rk-aksi">' +
       '<button type="button" onclick="previewKuitansi(' + a + ')">Pratinjau</button>' +
