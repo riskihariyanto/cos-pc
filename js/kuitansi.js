@@ -105,15 +105,16 @@ function susunKuitansi(d, pid, key) {
     ['Uang sejumlah', terbilangRupiah(i.total || 0)],
     ['Untuk pembayaran', 'Iuran COS periode ' + periode],
     ['Tanggal setor', fmtTgl(i.tanggalSetor)],
+    ['Metode pembayaran', labelMetode(i.metode) || '-'],
     ['Status', 'Lunas']
   ];
   d.setFont('helvetica', 'bold');
   d.setFontSize(10);
-  let y = 54;
+  let y = 51;
   const baris = isi.map(([label, nilai]) => {
     const lines = d.splitTextToSize(nilai, W - 16 - 59);
     const r = { label, lines, y };
-    y += Math.max(1, lines.length) * 4.6 + 3.2;
+    y += Math.max(1, lines.length) * 4.6 + 2;
     return r;
   });
 
